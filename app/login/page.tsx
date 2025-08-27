@@ -27,10 +27,17 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.email || !formData.password) {
+      alert('Please fill in all fields');
+      return;
+    }
+
     setIsLoading(true);
+    console.log('Login attempt started for:', formData.email);
 
     try {
       // Firebase sign in
+      console.log('Attempting to sign in...');
       const userCredential = await signInWithEmailAndPassword(
         auth,
         formData.email,
@@ -38,6 +45,7 @@ export default function LoginPage() {
       );
 
       const user = userCredential.user;
+      console.log('Firebase auth successful, user:', user.uid);
 
       // Fetch additional user data from Firestore
       const docRef = doc(db, 'users', user.uid);
@@ -45,17 +53,24 @@ export default function LoginPage() {
 
       if (!docSnap.exists()) {
         alert('User data not found. Please contact support.');
+        setIsLoading(false);
         return;
       }
 
       const userData = docSnap.data();
       const role = userData.role || 'USER';
+      const userInfo = {
+        email: user.email,
+        role,
+        name: userData.name || user.email?.split('@')[0] || 'User',
+        uid: user.uid
+      };
 
-      // Store user data in localStorage (or a proper state management solution)
-      localStorage.setItem(
-        'user',
-        JSON.stringify({ email: user.email, role, name: userData.name })
-      );
+      // Store user data in localStorage
+      localStorage.setItem('user', JSON.stringify(userInfo));
+      
+      // Force a refresh to update the Navigation component
+      window.dispatchEvent(new Event('storage'));
 
       // Redirect based on role
       if (role === 'ADMIN') {

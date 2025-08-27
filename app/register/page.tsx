@@ -82,6 +82,15 @@ export default function RegisterForm() {
         createdAt: new Date(),
         photoURL: `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.name)}&background=random`
       });
+      
+      localStorage.setItem(
+        'user',
+        JSON.stringify({
+          email: formData.email,
+          role: formData.role,
+          name: formData.name
+        })
+      );      
       setSuccess('Account created successfully! Redirecting...');
       setTimeout(() => router.push('/dashboard'), 1500);
     } catch (error: any) {

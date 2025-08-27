@@ -2,19 +2,21 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Menu, X, Home, LogIn, UserPlus, LayoutDashboard, Settings, ChevronDown } from 'lucide-react';
-import { signOut } from 'firebase/auth';
+import { signOut, onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/app/firebase/firebase';
 
-interface NavigationProps {
-  currentUser?: {
-    role: 'USER' | 'ADMIN';
-    name: string;
-  } | null;
+interface UserData {
+  email: string;
+  role: 'USER' | 'ADMIN';
+  name: string;
 }
 
-export default function Navigation({ currentUser }: NavigationProps) {
+export default function Navigation() {
+  const [currentUser, setCurrentUser] = useState<UserData | null>(null);
+  const [loading, setLoading] = useState(true);
+  
   const pathname = usePathname();
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -34,7 +36,7 @@ export default function Navigation({ currentUser }: NavigationProps) {
 
   const adminLinks = [
     { href: '/', label: 'Home', icon: Home },
-    { href: '/dashboard', label: 'User Dashboard', icon: LayoutDashboard },
+    // { href: '/dashboard', label: 'User Dashboard', icon: LayoutDashboard },
     { href: '/admin', label: 'Admin Panel', icon: Settings },
   ];
 
@@ -43,14 +45,53 @@ export default function Navigation({ currentUser }: NavigationProps) {
     return currentUser.role === 'ADMIN' ? adminLinks : userLinks;
   };
 
+  useEffect(() => {
+    // Check for user data in localStorage on component mount
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      setCurrentUser(JSON.parse(userData));
+    }
+    setLoading(false);
+
+    // Set up auth state listener
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        const userData = localStorage.getItem('user');
+        if (userData) {
+          setCurrentUser(JSON.parse(userData));
+        }
+      } else {
+        setCurrentUser(null);
+        localStorage.removeItem('user');
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      router.push('/'); // redirect to main page after logout
+      setCurrentUser(null);
+      localStorage.removeItem('user');
+      router.push('/');
     } catch (error) {
       console.error('Logout failed:', error);
     }
   };
+
+  if (loading) {
+    return (
+      <nav className="bg-white/80 backdrop-blur-md border-b border-gray-100 shadow-sm sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="w-32 h-6 bg-gray-200 rounded animate-pulse"></div>
+            <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse"></div>
+          </div>
+        </div>
+      </nav>
+    );
+  }
 
   return (
     <nav className="bg-white/80 backdrop-blur-md border-b border-gray-100 shadow-sm sticky top-0 z-50">
@@ -58,13 +99,14 @@ export default function Navigation({ currentUser }: NavigationProps) {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2 group">
-            <div className="w-9 h-9 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center transform group-hover:rotate-6 transition-transform duration-300">
-              <span className="text-white font-bold text-sm">PM</span>
-            </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
-              ProjectManager
-            </span>
-          </Link>
+           <div className="w-9 h-9 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center transform group-hover:rotate-6 transition-transform duration-300">
+             <span className="text-white font-bold text-sm">PM</span>
+           </div>
+           <span className="text-xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
+             {currentUser ? currentUser.name.split(' ')[0] : 'ProjectManager'}
+           </span>
+        </Link>
+
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-1">
