@@ -4,6 +4,10 @@ import { useState } from 'react';
 import Link from 'next/link';
 import Navigation from '@/components/Navigation';
 import { Eye, EyeOff, LogIn, Mail, Lock } from 'lucide-react';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth, db } from '@/app/firebase/firebase';
+import { doc, getDoc } from 'firebase/firestore';
+import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({
@@ -12,71 +16,73 @@ export default function LoginPage() {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
 
-  interface LoginResponse {
-    success: boolean;
-    message?: string;
-    user?: {
-      email: string;
-      role: 'USER' | 'ADMIN';
-    };
-  }
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData(prev => ({
+      ...prev,
+      [e.target.name]: e.target.value,
+    }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
-    try {
-      // Simulate API call
-      const response = await new Promise<LoginResponse>((resolve) => {
-        setTimeout(() => {
-          // Mock authentication logic
-          if ((formData.email === 'user@example.com' || formData.email === 'admin@example.com') && formData.password === 'password123') {
-            resolve({
-              success: true,
-              user: {
-                email: formData.email,
-                role: formData.email === 'admin@example.com' ? 'ADMIN' : 'USER'
-              }
-            });
-          } else {
-            resolve({ success: false, message: 'Invalid credentials' });
-          }
-        }, 1000);
-      });
 
-      if (response.success && response.user) {
-        // Store user data in localStorage (in a real app, use secure HTTP-only cookies)
-        localStorage.setItem('user', JSON.stringify(response.user));
-        
-        // Redirect based on role
-        if (response.user.role === 'ADMIN') {
-          window.location.href = '/admin';
-        } else {
-          window.location.href = '/dashboard';
-        }
-      } else {
-        alert(response.message || 'Login failed. Please try again.');
+    try {
+      // Firebase sign in
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        formData.email,
+        formData.password
+      );
+
+      const user = userCredential.user;
+
+      // Fetch additional user data from Firestore
+      const docRef = doc(db, 'users', user.uid);
+      const docSnap = await getDoc(docRef);
+
+      if (!docSnap.exists()) {
+        alert('User data not found. Please contact support.');
+        return;
       }
-    } catch (error) {
+
+      const userData = docSnap.data();
+      const role = userData.role || 'USER';
+
+      // Store user data in localStorage (or a proper state management solution)
+      localStorage.setItem(
+        'user',
+        JSON.stringify({ email: user.email, role, name: userData.name })
+      );
+
+      // Redirect based on role
+      if (role === 'ADMIN') {
+        router.push('/admin');
+      } else {
+        router.push('/dashboard');
+      }
+    } catch (error: any) {
       console.error('Login error:', error);
-      alert('An error occurred during login. Please try again.');
+      let message = 'An error occurred during login. Please try again.';
+
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+        message = 'Invalid email or password.';
+      } else if (error.code === 'auth/invalid-email') {
+        message = 'Invalid email address.';
+      }
+
+      alert(message);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({
-      ...prev,
-      [e.target.name]: e.target.value
-    }));
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <Navigation />
-      
+
       <div className="flex items-center justify-center py-16 px-4 sm:px-6 lg:px-8">
         <div className="w-full max-w-md space-y-8 bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
           <div className="text-center">
@@ -142,26 +148,6 @@ export default function LoginPage() {
                     )}
                   </button>
                 </div>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <input
-                  id="remember-me"
-                  name="remember-me"
-                  type="checkbox"
-                  className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-emerald-300 rounded"
-                />
-                <label htmlFor="remember-me" className="ml-2 block text-sm text-emerald-900">
-                  Remember me
-                </label>
-              </div>
-
-              <div className="text-sm">
-                <a href="#" className="font-medium text-emerald-600 hover:text-emerald-500">
-                  Forgot your password?
-                </a>
               </div>
             </div>
 

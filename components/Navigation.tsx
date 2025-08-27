@@ -1,9 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Menu, X, Home, LogIn, UserPlus, LayoutDashboard, Settings, ChevronDown } from 'lucide-react';
+import { signOut } from 'firebase/auth';
+import { auth } from '@/app/firebase/firebase';
 
 interface NavigationProps {
   currentUser?: {
@@ -12,12 +14,13 @@ interface NavigationProps {
   } | null;
 }
 
-
 export default function Navigation({ currentUser }: NavigationProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const isActive = (path: string) => pathname === path;
+
   const publicLinks = [
     { href: '/', label: 'Home', icon: Home },
     { href: '/login', label: 'Login', icon: LogIn },
@@ -38,6 +41,15 @@ export default function Navigation({ currentUser }: NavigationProps) {
   const getLinks = () => {
     if (!currentUser) return publicLinks;
     return currentUser.role === 'ADMIN' ? adminLinks : userLinks;
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      router.push('/'); // redirect to main page after logout
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
   };
 
   return (
@@ -73,10 +85,10 @@ export default function Navigation({ currentUser }: NavigationProps) {
                 </Link>
               );
             })}
-            
+
             {currentUser && (
               <div className="relative ml-2">
-                <button 
+                <button
                   onClick={() => setIsProfileOpen(!isProfileOpen)}
                   className="flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50/50 transition-colors duration-200"
                 >
@@ -84,9 +96,12 @@ export default function Navigation({ currentUser }: NavigationProps) {
                     {currentUser.name.charAt(0).toUpperCase()}
                   </div>
                   <span className="hidden lg:inline">{currentUser.name.split(' ')[0]}</span>
-                  <ChevronDown size={16} className={`transition-transform duration-200 ${isProfileOpen ? 'rotate-180' : ''}`} />
+                  <ChevronDown
+                    size={16}
+                    className={`transition-transform duration-200 ${isProfileOpen ? 'rotate-180' : ''}`}
+                  />
                 </button>
-                
+
                 {isProfileOpen && (
                   <div className="absolute right-0 mt-2 w-56 rounded-xl bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
                     <div className="p-4 border-b border-gray-100">
@@ -102,7 +117,10 @@ export default function Navigation({ currentUser }: NavigationProps) {
                       </button>
                     </div>
                     <div className="py-1 border-t border-gray-100">
-                      <button className="block w-full text-left px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 rounded-b-lg">
+                      <button
+                        onClick={handleLogout}
+                        className="block w-full text-left px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 rounded-b-lg"
+                      >
                         Sign out
                       </button>
                     </div>
@@ -120,11 +138,7 @@ export default function Navigation({ currentUser }: NavigationProps) {
               aria-expanded="false"
             >
               <span className="sr-only">Open main menu</span>
-              {isMenuOpen ? (
-                <X size={24} className="text-gray-600" />
-              ) : (
-                <Menu size={24} className="text-gray-600" />
-              )}
+              {isMenuOpen ? <X size={24} className="text-gray-600" /> : <Menu size={24} className="text-gray-600" />}
             </button>
           </div>
         </div>
@@ -151,7 +165,7 @@ export default function Navigation({ currentUser }: NavigationProps) {
                   </Link>
                 );
               })}
-              
+
               {currentUser && (
                 <div className="pt-3 border-t border-gray-100 mt-3">
                   <div className="px-4 py-3 flex items-center space-x-3">
@@ -170,7 +184,10 @@ export default function Navigation({ currentUser }: NavigationProps) {
                     <button className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg">
                       Settings
                     </button>
-                    <button className="block w-full text-left px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 rounded-lg mt-2">
+                    <button
+                      onClick={handleLogout}
+                      className="block w-full text-left px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 rounded-lg mt-2"
+                    >
                       Sign out
                     </button>
                   </div>
