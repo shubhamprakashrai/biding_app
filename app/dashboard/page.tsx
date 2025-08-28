@@ -241,7 +241,7 @@ export default function DashboardPage() {
       <ProjectForm
         isOpen={isProjectFormOpen}
         onClose={() => setIsProjectFormOpen(false)}
-        onSubmit={handleCreateProject}
+        // onSubmit={handleCreateProject}
       />
 
       {selectedProjectForChat && selectedProject && (

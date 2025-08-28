@@ -103,7 +103,7 @@ export default function Navigation() {
              <span className="text-white font-bold text-sm">PM</span>
            </div>
            <span className="text-xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
-             {currentUser ? currentUser.name.split(' ')[0] : 'ProjectManager'}
+             {currentUser?.name?.split(' ')[0] || 'ProjectManager'}
            </span>
         </Link>
 
@@ -135,9 +135,9 @@ export default function Navigation() {
                   className="flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50/50 transition-colors duration-200"
                 >
                   <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center text-emerald-600 font-medium">
-                    {currentUser.name.charAt(0).toUpperCase()}
+                    {currentUser?.name?.charAt(0)?.toUpperCase() || 'U'}
                   </div>
-                  <span className="hidden lg:inline">{currentUser.name.split(' ')[0]}</span>
+                  <span className="hidden lg:inline">{currentUser?.name?.split(' ')[0] || 'User'}</span>
                   <ChevronDown
                     size={16}
                     className={`transition-transform duration-200 ${isProfileOpen ? 'rotate-180' : ''}`}
