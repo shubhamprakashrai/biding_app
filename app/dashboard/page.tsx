@@ -5,28 +5,67 @@ import Navigation from '@/components/Navigation';
 import ProjectCard from '@/components/ProjectCard';
 import ProjectForm from '@/components/ProjectForm';
 import ChatComponent from '@/components/ChatComponent';
-import { projects as initialProjects, messages as initialMessages } from '@/data/dummy';
 import { Project, Message, User } from '@/types';
 import { Plus, Briefcase, MessageSquare, Clock, ArrowRight, CheckCircle, Zap } from 'lucide-react';
+import { collection, query, where, getDocs } from "firebase/firestore";
+import { db } from '@/app/firebase/firebase';
+import { getAuth, onAuthStateChanged } from "firebase/auth";
 
 export default function DashboardPage() {
-  const [projects, setProjects] = useState<Project[]>(initialProjects);
-  const [messages, setMessages] = useState<Message[]>(initialMessages);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [isProjectFormOpen, setIsProjectFormOpen] = useState(false);
   const [selectedProjectForChat, setSelectedProjectForChat] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
 
-  // Load user from localStorage
+
+  // Load current user
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const userData = localStorage.getItem('user');
-      if (userData) setCurrentUser(JSON.parse(userData));
-    }
+    const auth = getAuth();
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        const userData: User = {
+          id: user.uid,
+          name: user.displayName || "User",
+          email: user.email || "",
+          role: "USER"
+        };
+        setCurrentUser(userData);
+
+        // Fetch user-specific projects from Firestore
+        const q = query(collection(db, "projects"), where("userId", "==", user.uid));
+        const snap = await getDocs(q);
+        const projectsData = snap.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as Project[];
+        setProjects(projectsData);
+
+        // Optionally fetch messages for these projects
+        const messagesSnap = await getDocs(collection(db, "messages"));
+        const messagesData = messagesSnap.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as Message[];
+        setMessages(messagesData);
+
+        setLoading(false);
+      }
+    });
+
+    return () => unsubscribe();
   }, []);
 
   const handleCreateProject = (newProject: Project) => {
     setProjects(prev => [newProject, ...prev]);
   };
+  const handleEditProject = (project: Project) => {
+    setEditingProject(project);
+    setIsProjectFormOpen(true);
+  };
+  
 
   const handleViewMessages = (projectId: string) => {
     setSelectedProjectForChat(projectId);
@@ -48,8 +87,11 @@ export default function DashboardPage() {
     setMessages(prev => [...prev, newMessage]);
   };
 
+  if (loading) return <div className="p-10 text-center">Loading...</div>;
+  if (!currentUser) return <div className="p-10 text-center">User not logged in</div>;
+
+  const userProjects = projects.filter(p => p.userId === currentUser.id);
   const selectedProject = projects.find(p => p.id === selectedProjectForChat);
-  const userProjects = currentUser ? projects.filter(p => p.userId === currentUser.id) : [];
 
   const projectStats = {
     total: userProjects.length,
@@ -58,13 +100,11 @@ export default function DashboardPage() {
     completed: userProjects.filter(p => p.status === 'COMPLETED').length,
   };
 
-  // If no user, maybe redirect or show placeholder
-  if (!currentUser) return <div className="p-10 text-center">Loading user...</div>;
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-25 to-gray-50">
-    <Navigation />
+      <Navigation />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10">
           <div className="mb-4 md:mb-0">
@@ -73,7 +113,7 @@ export default function DashboardPage() {
             </h1>
             <p className="text-gray-500 flex items-center space-x-1">
               <Clock className="w-4 h-4" />
-              <span>Last updated: {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</span>
+              <span>Last updated: {new Date().toLocaleDateString()}</span>
             </p>
           </div>
           <button
@@ -87,66 +127,27 @@ export default function DashboardPage() {
 
         {/* Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
-          {/* Total */}
-          <div className="bg-white/80 backdrop-blur-sm p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-500 mb-1">Total Projects</p>
-                <p className="text-2xl font-bold text-gray-800">{projectStats.total}</p>
-                <p className="text-xs text-emerald-600 mt-1 flex items-center">
-                  <ArrowRight className="w-3 h-3 mr-1" /> All projects
-                </p>
+          {['total','pending','inProgress','completed'].map((key) => {
+            const titleMap: any = { total: "Total Projects", pending: "Pending", inProgress: "In Progress", completed: "Completed" };
+            const countMap: any = { total: projectStats.total, pending: projectStats.pending, inProgress: projectStats.inProgress, completed: projectStats.completed };
+            const iconMap: any = { total: <Briefcase size={20} />, pending: <Clock size={20} />, inProgress: <Zap size={20} />, completed: <CheckCircle size={20} /> };
+            return (
+              <div key={key} className="bg-white/80 backdrop-blur-sm p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-500 mb-1">{titleMap[key]}</p>
+                    <p className="text-2xl font-bold text-gray-800">{countMap[key]}</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-emerald-50 text-emerald-600">
+                    {iconMap[key]}
+                  </div>
+                </div>
               </div>
-              <div className="p-3 rounded-lg bg-emerald-50 text-emerald-600">
-                <Briefcase size={20} />
-              </div>
-            </div>
-          </div>
-
-          {/* Pending */}
-          <div className="bg-white/80 backdrop-blur-sm p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-500 mb-1">Pending</p>
-                <p className="text-2xl font-bold text-amber-600">{projectStats.pending}</p>
-                <p className="text-xs text-amber-600 mt-1">Awaiting action</p>
-              </div>
-              <div className="p-3 rounded-lg bg-amber-50 text-amber-500">
-                <Clock size={20} />
-              </div>
-            </div>
-          </div>
-
-          {/* In Progress */}
-          <div className="bg-white/80 backdrop-blur-sm p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-500 mb-1">In Progress</p>
-                <p className="text-2xl font-bold text-amber-600">{projectStats.inProgress}</p>
-                <p className="text-xs text-amber-600 mt-1">Active development</p>
-              </div>
-              <div className="p-3 rounded-lg bg-amber-50 text-amber-500">
-                <Zap size={20} className="fill-amber-300" />
-              </div>
-            </div>
-          </div>
-
-          {/* Completed */}
-          <div className="bg-white/80 backdrop-blur-sm p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-500 mb-1">Completed</p>
-                <p className="text-2xl font-bold text-emerald-600">{projectStats.completed}</p>
-                <p className="text-xs text-emerald-600 mt-1">Successfully delivered</p>
-              </div>
-              <div className="p-3 rounded-lg bg-emerald-50 text-emerald-500">
-                <CheckCircle size={20} />
-              </div>
-            </div>
-          </div>
+            );
+          })}
         </div>
 
-        {/* Projects */}
+        {/* Project List */}
         <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-sm border border-gray-100 mb-8 overflow-hidden transform transition-all duration-300 hover:shadow-md">
           <div className="p-6 border-b border-gray-100 flex justify-between items-center">
             <h2 className="text-xl font-semibold text-gray-800 flex items-center space-x-2">
@@ -160,13 +161,8 @@ export default function DashboardPage() {
           <div className="p-6">
             {userProjects.length > 0 ? (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-                {userProjects.map((project) => (
-                  <ProjectCard
-                    key={project.id}
-                    project={project}
-                    showActions={true}
-                    onViewMessages={handleViewMessages}
-                  />
+                {userProjects.map(project => (
+                  <ProjectCard key={project.id} project={project} showActions  onEdit={handleEditProject} onViewMessages={handleViewMessages} />
                 ))}
               </div>
             ) : (
@@ -175,74 +171,41 @@ export default function DashboardPage() {
                   <Briefcase className="h-8 w-8 text-emerald-600" />
                 </div>
                 <h3 className="text-lg font-medium text-gray-800 mb-2">No projects yet</h3>
-                <p className="text-gray-500 mb-6 max-w-md mx-auto">Get started by creating your first project to organize your work and collaborate with your team.</p>
+                <p className="text-gray-500 mb-6 max-w-md mx-auto">Get started by creating your first project.</p>
                 <button
                   onClick={() => setIsProjectFormOpen(true)}
-                  className="inline-flex items-center justify-center px-6 py-3 font-medium text-white bg-gradient-to-r from-emerald-500 to-teal-600 rounded-xl hover:shadow-lg hover:shadow-emerald-100 transition-all duration-300 hover:-translate-y-0.5"
+                  className="inline-flex items-center justify-center px-6 py-3 font-medium text-white bg-gradient-to-r from-emerald-500 to-teal-600 rounded-xl hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5"
                 >
-                  <Plus size={20} className="mr-2" />
-                  <span>Create Project</span>
+                  <Plus size={20} className="mr-2" /> Create Project
                 </button>
               </div>
             )}
           </div>
         </div>
 
-        {/* Recent Communications */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-sm border border-gray-100 overflow-hidden transform transition-all duration-300 hover:shadow-md">
-          <div className="p-6 border-b border-gray-100">
-            <h2 className="text-xl font-semibold text-gray-800 flex items-center space-x-2">
-              <MessageSquare size={20} className="text-emerald-600" />
-              <span>Recent Communications</span>
-            </h2>
-          </div>
-          <div className="p-6">
-            {messages.length > 0 ? (
-              messages.slice(0, 3).map((message) => {
-                const project = projects.find(p => p.id === message.projectId);
-                return (
-                  <div key={message.id} className="bg-white border border-gray-100 rounded-xl p-4 hover:shadow-md transition-shadow duration-300">
-                    <div className="flex justify-between items-start mb-2">
-                      <div className="flex items-center space-x-2">
-                        <div className="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-sm font-medium">
-                          {message.senderName.charAt(0).toUpperCase()}
-                        </div>
-                        <h4 className="font-medium text-gray-800">{project?.title}</h4>
-                      </div>
-                      <span className="text-xs text-gray-400">
-                        {new Date(message.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-600 mb-3 pl-10">{message.content}</p>
-                    <button
-                      onClick={() => handleViewMessages(message.projectId)}
-                      className="text-emerald-600 hover:text-emerald-700 text-sm font-medium flex items-center ml-10 group"
-                    >
-                      <span>View conversation</span>
-                      <ArrowRight size={16} className="ml-1 group-hover:translate-x-1 transition-transform duration-200" />
-                    </button>
-                  </div>
-                );
-              })
-            ) : (
-              <div className="text-center py-12 px-4">
-                <div className="mx-auto w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mb-4">
-                  <MessageSquare className="h-8 w-8 text-emerald-600" />
-                </div>
-                <h3 className="text-lg font-medium text-gray-800 mb-2">No messages yet</h3>
-                <p className="text-gray-500 max-w-md mx-auto">Start a conversation on any project to see messages here.</p>
-              </div>
-            )}
-          </div>
-        </div>
       </div>
 
       {/* Modals */}
       <ProjectForm
-        isOpen={isProjectFormOpen}
-        onClose={() => setIsProjectFormOpen(false)}
-        // onSubmit={handleCreateProject}
-      />
+  isOpen={isProjectFormOpen}
+  onClose={() => {
+    setIsProjectFormOpen(false);
+    setEditingProject(null);
+  }}
+  project={editingProject}   // ✅ pass the selected project when editing
+  onSubmit={(updatedProject) => {
+    if (editingProject) {
+      // update existing
+      setProjects(prev =>
+        prev.map(p => (p.id === updatedProject.id ? updatedProject : p))
+      );
+    } else {
+      // add new
+      setProjects(prev => [updatedProject, ...prev]);
+    }
+    setEditingProject(null);
+  }}
+/>
 
       {selectedProjectForChat && selectedProject && (
         <ChatComponent

@@ -329,20 +329,23 @@
 
 
 'use client';
-
-import { useState, useRef, ChangeEvent } from 'react';
+import { useState, useRef, ChangeEvent, useEffect } from 'react';
 import { X, Plus, Upload, Trash2 } from 'lucide-react';
 import { auth, db, storage } from '@/app/firebase/firebase'; 
 import { doc, setDoc } from 'firebase/firestore';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { getAuth } from 'firebase/auth';
+import { Project } from '@/types';
 
 interface ProjectFormProps {
   isOpen: boolean;
   onClose: () => void;
+  project?: Project | null; // optional for editing
+  onSubmit?: (projectData: Project) => void;
 }
 
-export default function ProjectForm({ isOpen, onClose }: ProjectFormProps) {
+export default function ProjectForm({ isOpen, onClose ,project, onSubmit}: ProjectFormProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
@@ -351,12 +354,39 @@ export default function ProjectForm({ isOpen, onClose }: ProjectFormProps) {
     title: '',
     description: '',
     features: '',
-    budget: '',
-    timeline: '',
+    budget: 0,
+    timeline: 0,
     contactName: '',
     email: '',
     phone: ''
   });
+  useEffect(() => {
+    if (project) {
+      setFormData({
+        title: project.title || '',
+        description: project.description || '',
+        features: project.features || '',
+        budget: project.budget ?? 0,
+        timeline: project.timeline ? Number(project.timeline) : 0,
+        contactName: project.contactName || '',
+        email: project.email || '',
+        phone: project.phone || ''
+      });
+    } else {
+      setFormData({
+        title: '',
+        description: '',
+        features: '',
+        budget: 0,
+        timeline: 0,
+        contactName: '',
+        email: '',
+        phone: ''
+      });
+      setFiles([]);
+    }
+  }, [project, isOpen]);
+
   
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -370,35 +400,56 @@ export default function ProjectForm({ isOpen, onClose }: ProjectFormProps) {
   };
   
 
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setLoading(true);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
 
-  try {
-    // Upload attachments if any
-    const uploadedFiles: string[] = [];
-    for (const file of files) {
-      const storageRef = ref(storage, `projects/${file.name}-${Date.now()}`);
-      await uploadBytes(storageRef, file);
-      const url = await getDownloadURL(storageRef);
-      uploadedFiles.push(url);
+
+  
+    try {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (!user) return alert("Login first!");
+  
+      const uploadedFiles: string[] = [];
+      for (const file of files) {
+        const storageRef = ref(storage, `projects/${file.name}-${Date.now()}`);
+        await uploadBytes(storageRef, file);
+        const url = await getDownloadURL(storageRef);
+        uploadedFiles.push(url);
+      }
+  
+      const projectData: Project = {
+        ...formData,
+        budget: Number(formData.budget),
+        timeline: Number(formData.timeline),
+        userId: user.uid,
+        attachments: uploadedFiles.length
+          ? uploadedFiles
+          : project?.attachments || [],
+        status: project?.status || "PENDING",
+        createdAt: project?.createdAt || new Date().toISOString(),
+        id: project?.id || "" // replaced later if new
+      };
+  
+      if (project) {
+        // ✅ Update existing project
+        await setDoc(doc(db, "projects", project.id), projectData);
+        onSubmit?.({ ...projectData, id: project.id });
+      } else {
+        // ✅ Create new project
+        const docRef = await addDoc(collection(db, "projects"), projectData);
+        onSubmit?.({ ...projectData, id: docRef.id });
+      }
+  
+      onClose();
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
     }
-
-    // Save project to Firestore
-    await addDoc(collection(db, "projects"), {
-      ...formData,
-      attachments: uploadedFiles,
-      createdAt: serverTimestamp(),
-    });
-
-    console.log("✅ Project saved to Firestore");
-    onClose(); // close modal
-  } catch (error) {
-    console.error("Error submitting project:", error);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
+  
   
 
   const handleChange = (
@@ -407,7 +458,7 @@ const handleSubmit = async (e: React.FormEvent) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: name === "budget" || name === "timeline" ? Number(value) : value
     }));
   };
 

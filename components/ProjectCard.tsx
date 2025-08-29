@@ -6,6 +6,7 @@ interface ProjectCardProps {
   project: Project;
   showActions?: boolean;
   onViewMessages?: (projectId: string) => void;
+  onEdit?: (project: Project) => void;
   className?: string;
 }
 
@@ -13,6 +14,7 @@ export default function ProjectCard({
   project, 
   showActions = false, 
   onViewMessages, 
+  onEdit,  
   className 
 }: ProjectCardProps) {
   const getStatusConfig = (status: Project['status']) => {
@@ -60,8 +62,10 @@ export default function ProjectCard({
     });
   };
 
-  const statusConfig = getStatusConfig(project.status);
-  const isOverdue = new Date(project.deadline) < new Date() && project.status !== 'COMPLETED';
+  // Ensure status has a default value and is a string
+  const projectStatus = project?.status || 'PENDING';
+  const statusConfig = getStatusConfig(projectStatus as Project['status']);
+  const isOverdue = new Date(project.deadline??"") < new Date() && projectStatus !== 'COMPLETED';
 
   return (
     <div className={cn(
@@ -76,7 +80,7 @@ export default function ProjectCard({
           </h3>
           <span className={statusConfig.className}>
             {statusConfig.icon}
-            {project.status.replace('_', ' ')}
+            {String(project?.status || 'PENDING').replace(/_/g, ' ')}
           </span>
         </div>
 
@@ -97,7 +101,7 @@ export default function ProjectCard({
               isOverdue ? "bg-red-50 text-red-700" : "text-gray-500"
             )}>
               <Calendar size={12} className="mr-1.5 text-gray-400" />
-              <span>Due {formatDate(project.deadline)}</span>
+              <span>Due {formatDate(project.deadline??"")}</span>
               {isOverdue && <span className="ml-1.5 px-1.5 py-0.5 bg-red-100 text-red-700 text-[10px] font-medium rounded">Overdue</span>}
             </div>
           </div>
@@ -113,21 +117,12 @@ export default function ProjectCard({
       {showActions && (
         <div className="border-t border-gray-100 p-4 bg-gray-50">
           <div className="flex space-x-2">
-            <button 
-              onClick={(e) => {
-                e.stopPropagation();
-                onViewMessages?.(project.id);
-              }}
-              className="flex-1 flex items-center justify-center text-sm font-medium text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 py-2 px-3 rounded-lg transition-colors duration-200 group/button"
-            >
-              <MessageSquare size={16} className="mr-2 text-emerald-500 group-hover/button:translate-x-0.5 transition-transform duration-200" />
-              <span>Messages</span>
-            </button>
+            
             <button 
               className="flex items-center justify-center text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 py-2 px-3 rounded-lg transition-colors duration-200 group/button"
               onClick={(e) => {
                 e.stopPropagation();
-                // Handle edit action
+                onEdit?.(project);
               }}
             >
               <Edit2 size={14} className="mr-1.5 text-gray-500 group-hover/button:rotate-[-10deg] transition-transform duration-200" />

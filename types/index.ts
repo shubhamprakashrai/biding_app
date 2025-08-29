@@ -10,10 +10,17 @@ export interface Project {
   title: string;
   description: string;
   budget: number;
-  deadline: string;
+  deadline?: string;
+  timeline: string | number;
   status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
   userId: string;
   createdAt: string;
+  email: string;
+  phone: string;
+  attachments?: string[];
+  features?: string;  
+  contactName: string;
+  
 }
 
 export interface Proposal {
