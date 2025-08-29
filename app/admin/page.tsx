@@ -8,7 +8,7 @@ import ChatComponent from '@/components/ChatComponent';
 import { projects as initialProjects, proposals as initialProposals, messages as initialMessages } from '@/data/dummy';
 import { Project, Proposal, Message } from '@/types';
 import { Users, Briefcase, FileText, MessageSquare, DollarSign } from 'lucide-react';
-import { collection, onSnapshot } from 'firebase/firestore';
+import { collection, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase/firebase';
 
 export default function AdminPage() {
@@ -55,6 +55,17 @@ export default function AdminPage() {
 
   const handleViewMessages = (projectId: string) => {
     setSelectedProjectForChat(projectId);
+  };
+
+  const handleStatusChange = async (projectId: string, newStatus: Project['status']) => {
+    try {
+      const projectRef = doc(db, 'projects', projectId);
+      await updateDoc(projectRef, { status: newStatus });
+      // The onSnapshot listener will automatically update the UI
+    } catch (error) {
+      console.error('Error updating project status:', error);
+      // You might want to show an error toast here
+    }
   };
 
   const handleSendMessage = (content: string) => {
@@ -150,9 +161,16 @@ export default function AdminPage() {
               {projects.map((project) => (
                 <div key={project.id} className="relative">
                   <ProjectCard
+                    key={project.id}
                     project={project}
                     showActions={true}
+                    isAdmin={currentUser.role === 'ADMIN'}
                     onViewMessages={handleViewMessages}
+                    onStatusChange={handleStatusChange}
+                    onEdit={(project) => {
+                      // Handle edit if needed
+                      console.log('Edit project:', project);
+                    }}
                   />
   
                 </div>
