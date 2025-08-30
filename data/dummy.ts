@@ -15,38 +15,7 @@ export const users: User[] = [
   }
 ];
 
-export const projects: Project[] = [
-  {
-    id: '1',
-    title: 'E-commerce Website Development',
-    description: 'Need a modern e-commerce platform with payment integration and inventory management.',
-    budget: 5000,
-    deadline: '2025-03-15',
-    status: 'IN_PROGRESS',
-    userId: '1',
-    createdAt: '2025-01-10T10:00:00Z'
-  },
-  {
-    id: '2',
-    title: 'Mobile App UI/UX Design',
-    description: 'Looking for a complete mobile app design for iOS and Android platforms.',
-    budget: 3000,
-    deadline: '2025-02-28',
-    status: 'PENDING',
-    userId: '1',
-    createdAt: '2025-01-12T14:30:00Z'
-  },
-  {
-    id: '3',
-    title: 'Company Website Redesign',
-    description: 'Corporate website needs a modern redesign with better performance and SEO.',
-    budget: 4500,
-    deadline: '2025-04-01',
-    status: 'COMPLETED',
-    userId: '1',
-    createdAt: '2025-01-08T09:15:00Z'
-  }
-];
+export const projects: Project[]   = [];
 
 export const proposals: Proposal[] = [
   {
