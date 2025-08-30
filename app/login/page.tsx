@@ -7,7 +7,6 @@ import { Eye, EyeOff, LogIn, Mail, Lock } from 'lucide-react';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth, db } from '@/app/firebase/firebase';
 import { doc, getDoc } from 'firebase/firestore';
-import Navigation from '@/components/Navigation';
 import GoogleLoginButton from '@/components/GoogleLoginButton';
 
 export default function LoginPage() {
@@ -96,10 +95,8 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <Navigation />
-
-      <div className="flex items-center justify-center py-16 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50">
+      <div className="flex min-h-[calc(100vh-64px)] items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
         <div className="w-full max-w-md space-y-6 bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
           <div className="text-center">
             <h1 className="text-2xl font-bold text-gray-800">Welcome Back</h1>

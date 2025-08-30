@@ -19,6 +19,7 @@ interface UserData {
 export default function Navigation() {
   const [currentUser, setCurrentUser] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
   
   const pathname = usePathname();
   const router = useRouter();
@@ -147,15 +148,16 @@ export default function Navigation() {
   // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (isProfileOpen) {
+      const target = event.target as HTMLElement;
+      const profileDropdown = target.closest('.profile-dropdown');
+      const profileButton = target.closest('.profile-button');
+      
+      if (!profileDropdown && !profileButton && isProfileOpen) {
         setIsProfileOpen(false);
       }
     };
 
-    if (isProfileOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
+    document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
@@ -175,18 +177,42 @@ export default function Navigation() {
     }
   };
 
-  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    const target = e.target as HTMLImageElement;
-    target.style.display = 'none';
+  const handleImageError = (imageUrl: string) => {
+    console.log('Image failed to load:', imageUrl);
+    setImageErrors(prev => {
+      const newSet = new Set(prev);
+      newSet.add(imageUrl);
+      return newSet;
+    });
+  };
+
+  const shouldShowImage = (photoURL: string | undefined) => {
+    return photoURL && !imageErrors.has(photoURL);
+  };
+
+  const UserAvatar = ({ size = 'small', user }: { size?: 'small' | 'large', user: UserData }) => {
+    const sizeClasses = size === 'small' ? 'w-8 h-8' : 'w-10 h-10';
+    const textSizeClass = size === 'small' ? '' : 'text-lg';
     
-    // Create fallback avatar
-    const fallback = target.nextElementSibling;
-    if (!fallback) {
-      const fallbackDiv = document.createElement('div');
-      fallbackDiv.className = 'w-8 h-8 rounded-full bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center text-emerald-600 font-medium';
-      fallbackDiv.textContent = currentUser?.name?.charAt(0)?.toUpperCase() || 'U';
-      target.parentNode?.insertBefore(fallbackDiv, target.nextSibling);
+    if (shouldShowImage(user.photoURL)) {
+      return (
+        <>
+          <img 
+            src={user.photoURL} 
+            alt={user.name || 'User'} 
+            className={`${sizeClasses} rounded-full object-cover border-2 border-white shadow-sm`}
+            onError={() => handleImageError(user.photoURL!)}
+            onLoad={() => console.log('Image loaded successfully:', user.photoURL)}
+          />
+        </>
+      );
     }
+    
+    return (
+      <div className={`${sizeClasses} rounded-full bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center text-emerald-600 font-medium ${textSizeClass}`}>
+        {user.name?.charAt(0)?.toUpperCase() || 'U'}
+      </div>
+    );
   };
 
   if (loading) {
@@ -239,21 +265,15 @@ export default function Navigation() {
             {currentUser && (
               <div className="relative ml-2">
                 <button
-                  onClick={() => setIsProfileOpen(!isProfileOpen)}
-                  className="flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50/50 transition-colors duration-200"
+                  className="profile-button flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50/50 transition-colors duration-200"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Profile button clicked, current state:', isProfileOpen);
+                    setIsProfileOpen(!isProfileOpen);
+                  }}
                 >
-                  {currentUser?.photoURL ? (
-                    <img 
-                      src={currentUser.photoURL} 
-                      alt={currentUser.name || 'User'} 
-                      className="w-8 h-8 rounded-full object-cover border-2 border-white shadow-sm"
-                      onError={handleImageError}
-                    />
-                  ) : (
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center text-emerald-600 font-medium">
-                      {currentUser?.name?.charAt(0)?.toUpperCase() || 'U'}
-                    </div>
-                  )}
+                  <UserAvatar size="small" user={currentUser} />
                   <span className="hidden lg:inline">{currentUser?.name?.split(' ')[0] || 'User'}</span>
                   <ChevronDown
                     size={16}
@@ -262,22 +282,9 @@ export default function Navigation() {
                 </button>
 
                 {isProfileOpen && (
-                  <div className="absolute right-0 mt-2 w-56 rounded-xl bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
+                  <div className="profile-dropdown absolute right-0 mt-2 w-56 rounded-xl bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
                     <div className="p-4 border-b border-gray-100 flex items-center space-x-3">
-                      {currentUser.photoURL ? (
-                        <img 
-                          src={currentUser.photoURL} 
-                          alt={currentUser.name} 
-                          className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.style.display = 'none';
-                          }}
-                        />
-                      ) : <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center text-emerald-600 font-medium text-lg">
-                      {currentUser.name?.charAt(0)?.toUpperCase() || 'U'}
-                    </div>}
-                      
+                      <UserAvatar size="large" user={currentUser} />
                       <div>
                         <p className="text-sm font-medium text-gray-900">{currentUser.name}</p>
                         <p className="text-xs text-gray-500">{currentUser.role === 'ADMIN' ? 'Administrator' : 'User'}</p>
@@ -286,21 +293,28 @@ export default function Navigation() {
                     <div className="py-1">
                       <Link
                         href="/userprofile"
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                        onClick={() => setIsProfileOpen(false)}>
-                      Your Profile
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                        onClick={() => setIsProfileOpen(false)}
+                      >
+                        Your Profile
                       </Link>
                       <Link
                         href="/settings"
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                        onClick={() => setIsProfileOpen(false)}>
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                        onClick={() => setIsProfileOpen(false)}
+                      >
                         Settings
                       </Link>
                     </div>
                     <div className="py-1 border-t border-gray-100">
                       <button
-                        onClick={handleLogout}
-                        className="block w-full text-left px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 rounded-b-lg"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          console.log('Logout button clicked');
+                          handleLogout();
+                        }}
+                        className="block w-full text-left px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 rounded-b-lg transition-colors"
                       >
                         Sign out
                       </button>
@@ -350,22 +364,20 @@ export default function Navigation() {
               {currentUser && (
                 <div className="pt-3 border-t border-gray-100 mt-3">
                   <div className="px-4 py-3 flex items-center space-x-3">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center text-emerald-600 font-medium">
-                      {currentUser.name?.charAt(0)?.toUpperCase() || 'U'}
-                    </div>
+                    <UserAvatar size="large" user={currentUser} />
                     <div>
                       <p className="text-sm font-medium text-gray-900">{currentUser.name}</p>
                       <p className="text-xs text-gray-500">{currentUser.role === 'ADMIN' ? 'Administrator' : 'User'}</p>
                     </div>
                   </div>
                   <div className="mt-2 space-y-1">
-                  <Link
+                    <Link
                       href="/userprofile"
                       onClick={() => {
                         setIsMenuOpen(false);
                         setIsProfileOpen(false);
                       }}
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg"
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
                     >
                       Your Profile
                     </Link>
@@ -376,13 +388,18 @@ export default function Navigation() {
                         setIsMenuOpen(false);
                         setIsProfileOpen(false);
                       }}
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg"
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
                     >
                       Settings
                     </Link>
                     <button
-                      onClick={handleLogout}
-                      className="block w-full text-left px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 rounded-lg mt-2"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log('Mobile logout clicked');
+                        handleLogout();
+                      }}
+                      className="block w-full text-left px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 rounded-lg mt-2 transition-colors"
                     >
                       Sign out
                     </button>
