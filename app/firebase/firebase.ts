@@ -1,13 +1,3 @@
-// import { initializeApp, getApps, getApp } from 'firebase/app';
-// import { getAuth } from 'firebase/auth';
-// import { getFirestore } from 'firebase/firestore';
-// import { getDatabase } from 'firebase/database';
-
-// const firebaseConfig = {
-//   apiKey: "AIzaSyAEafom6gEsn7W0uAOMIP1npC1crXOt1u8",
-//   authDomain: "sourcecodelelo-5b19c.firebaseapp.com",
-//   projectId: "sourcecodelelo-5b19c",
-//   storageBucket: "sourcecodelelo-5b19c.firebasestorage.app",
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { 
   getAuth, 
@@ -22,12 +12,11 @@ import { getFirestore, doc, setDoc, getDoc, serverTimestamp } from 'firebase/fir
 import { getDatabase } from 'firebase/database';
 import { getStorage } from 'firebase/storage';
 
-
 const firebaseConfig = {
   apiKey: "AIzaSyAEafom6gEsn7W0uAOMIP1npC1crXOt1u8",
   authDomain: "sourcecodelelo-5b19c.firebaseapp.com",
   projectId: "sourcecodelelo-5b19c",
-  storageBucket: "sourcecodelelo-5b19c.appspot.com", // 👈 should end with .appspot.com
+  storageBucket: "sourcecodelelo-5b19c.appspot.com", 
   messagingSenderId: "50283774428",
   appId: "1:50283774428:web:5b941b256d41f5a95e8f19",
   measurementId: "G-ZX5CQ2SHQX"
@@ -38,7 +27,7 @@ const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
 const db = getFirestore(app);
 const database = getDatabase(app);
-const storage = getStorage(app); 
+const storage = getStorage(app); // 👈 removed duplicate line
 
 // Google Auth Provider
 const googleProvider = new GoogleAuthProvider();
@@ -66,7 +55,7 @@ export const signInWithGoogle = async (): Promise<User> => {
     const userDocRef = doc(db, 'users', user.uid);
     const userDoc = await getDoc(userDocRef);
     
-    // ✅ Normalize photoURL safely (without mutating user object)
+    // Normalize photoURL safely (without mutating user object)
     let photoURL = user.photoURL || '';
     if (photoURL.includes("googleusercontent.com")) {
       if (photoURL.includes("=s")) {
@@ -80,7 +69,7 @@ export const signInWithGoogle = async (): Promise<User> => {
       uid: user.uid,
       email: user.email || '',
       name: user.displayName || user.email?.split('@')[0] || 'User',
-      photoURL: photoURL,   // ✅ store normalized photoURL here
+      photoURL: photoURL,   // store normalized photoURL here
       role: 'USER', // Default role
       provider: 'google.com',
       emailVerified: user.emailVerified,
@@ -135,5 +124,5 @@ export const signOut = async (): Promise<void> => {
   }
 };
 
-export { auth, db, database, storage,googleProvider };
+export { auth, db, database, googleProvider, storage };
 export default app;
