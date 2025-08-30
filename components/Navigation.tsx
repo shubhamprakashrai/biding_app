@@ -284,12 +284,18 @@ export default function Navigation() {
                       </div>
                     </div>
                     <div className="py-1">
-                      <button className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                        Your Profile
-                      </button>
-                      <button className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                      <Link
+                        href="/userprofile"
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        onClick={() => setIsProfileOpen(false)}>
+                      Your Profile
+                      </Link>
+                      <Link
+                        href="/settings"
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        onClick={() => setIsProfileOpen(false)}>
                         Settings
-                      </button>
+                      </Link>
                     </div>
                     <div className="py-1 border-t border-gray-100">
                       <button
@@ -353,12 +359,27 @@ export default function Navigation() {
                     </div>
                   </div>
                   <div className="mt-2 space-y-1">
-                    <button className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg">
+                  <Link
+                      href="/userprofile"
+                      onClick={() => {
+                        setIsMenuOpen(false);
+                        setIsProfileOpen(false);
+                      }}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg"
+                    >
                       Your Profile
-                    </button>
-                    <button className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg">
+                    </Link>
+
+                    <Link
+                      href="/settings"
+                      onClick={() => {
+                        setIsMenuOpen(false);
+                        setIsProfileOpen(false);
+                      }}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg"
+                    >
                       Settings
-                    </button>
+                    </Link>
                     <button
                       onClick={handleLogout}
                       className="block w-full text-left px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 rounded-lg mt-2"
