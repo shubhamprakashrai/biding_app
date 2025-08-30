@@ -92,7 +92,7 @@ export default function RegisterForm() {
         })
       );      
       setSuccess('Account created successfully! Redirecting...');
-      setTimeout(() => router.push('/dashboard'), 1500);
+      setTimeout(() => router.push('/'), 1500);
     } catch (error: any) {
       const errorMessage = error.code ? getAuthErrorMessage(error.code) : 'Failed to create account';
       setErrors({ ...errors, form: errorMessage });
