@@ -20,6 +20,8 @@ import {
 } from 'firebase/auth';
 import { getFirestore, doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { getDatabase } from 'firebase/database';
+import { getStorage } from 'firebase/storage';
+
 
 const firebaseConfig = {
   apiKey: "AIzaSyAEafom6gEsn7W0uAOMIP1npC1crXOt1u8",
@@ -36,6 +38,7 @@ const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
 const db = getFirestore(app);
 const database = getDatabase(app);
+const storage = getStorage(app); 
 
 // Google Auth Provider
 const googleProvider = new GoogleAuthProvider();
@@ -132,5 +135,5 @@ export const signOut = async (): Promise<void> => {
   }
 };
 
-export { auth, db, database, googleProvider };
+export { auth, db, database, storage,googleProvider };
 export default app;

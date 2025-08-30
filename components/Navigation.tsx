@@ -3,44 +3,50 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { Menu, X, Home, LogIn, UserPlus, LayoutDashboard, Settings, ChevronDown } from 'lucide-react';
+import {
+  Menu,
+  X,
+  Home,
+  LogIn,
+  UserPlus,
+  LayoutDashboard,
+  Settings,
+  ChevronDown
+} from 'lucide-react';
 import { signOut, onAuthStateChanged } from 'firebase/auth';
-import { auth, db } from '@/app/firebase/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { auth } from '@/app/firebase/firebase';
 
 interface UserData {
   email: string;
   role: 'USER' | 'ADMIN';
   name: string;
   photoURL?: string;
-  uid: string;
 }
 
 export default function Navigation() {
   const [currentUser, setCurrentUser] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
-  
+
   const pathname = usePathname();
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  
   const isActive = (path: string) => pathname === path;
 
   const publicLinks = [
     { href: '/', label: 'Home', icon: Home },
     { href: '/login', label: 'Login', icon: LogIn },
-    { href: '/register', label: 'Register', icon: UserPlus },
+    { href: '/register', label: 'Register', icon: UserPlus }
   ];
 
   const userLinks = [
     { href: '/', label: 'Home', icon: Home },
-    { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard }
   ];
 
   const adminLinks = [
     { href: '/', label: 'Home', icon: Home },
-    { href: '/admin', label: 'Admin Panel', icon: Settings },
+    { href: '/admin', label: 'Admin Panel', icon: Settings }
   ];
 
   const getLinks = () => {
@@ -49,143 +55,35 @@ export default function Navigation() {
   };
 
   useEffect(() => {
-    let isMounted = true;
-    
-    const initializeAuth = async () => {
-      try {
-        // Check for user data in localStorage on component mount
-        if (typeof window !== 'undefined') {
-          const userData = localStorage.getItem('user');
-          console.log('Initial user data from localStorage:', userData);
-          
-          if (userData) {
-            try {
-              const parsedData = JSON.parse(userData);
-              console.log('Parsed user data:', parsedData);
-              if (isMounted) {
-                setCurrentUser(parsedData);
-              }
-            } catch (parseError) {
-              console.error('Error parsing user data:', parseError);
-              localStorage.removeItem('user'); // Remove corrupted data
-            }
-          } else {
-            console.log('No user data found in localStorage');
-          }
-        }
-        
-        if (isMounted) {
-          setLoading(false);
-        }
-      } catch (error) {
-        console.error('Error initializing auth:', error);
-        if (isMounted) {
-          setLoading(false);
-        }
-      }
-    };
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      setCurrentUser(JSON.parse(userData));
+    }
+    setLoading(false);
 
-    // Set up auth state listener
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      try {
-        console.log('Auth state changed:', user);
-        if (user && isMounted) {
-          const userDoc = await getDoc(doc(db, 'users', user.uid));
-          if (userDoc.exists()) {
-            const userData = userDoc.data();
-            console.log('User data from Firestore:', userData);
-            const userInfo = {
-              email: userData.email || user.email || '',
-              name: userData.name || user.displayName || 'User',
-              role: userData.role || 'USER',
-              photoURL: userData.photoURL || user.photoURL || '',
-              uid: user.uid
-            };
-            
-            setCurrentUser(userInfo);
-            
-            // Save to localStorage
-            if (typeof window !== 'undefined') {
-              localStorage.setItem('user', JSON.stringify(userInfo));
-            }
-          } else {
-            console.log('User document does not exist in Firestore');
-            // Handle case where user exists in Auth but not in Firestore
-            const fallbackUserInfo = {
-              email: user.email || '',
-              name: user.displayName || 'User',
-              role: 'USER' as const,
-              photoURL: user.photoURL || '',
-              uid: user.uid
-            };
-            setCurrentUser(fallbackUserInfo);
-            
-            if (typeof window !== 'undefined') {
-              localStorage.setItem('user', JSON.stringify(fallbackUserInfo));
-            }
-          }
-        } else if (!user && isMounted) {
-          console.log('No user signed in');
-          setCurrentUser(null);
-          if (typeof window !== 'undefined') {
-            localStorage.removeItem('user');
-          }
+      if (user) {
+        const userData = localStorage.getItem('user');
+        if (userData) {
+          setCurrentUser(JSON.parse(userData));
         }
-      } catch (error) {
-        console.error('Error in auth state change:', error);
+      } else {
+        setCurrentUser(null);
+        localStorage.removeItem('user');
       }
     });
 
-    initializeAuth();
-
-    return () => {
-      isMounted = false;
-      unsubscribe();
-    };
+    return () => unsubscribe();
   }, []);
-
-  // Close dropdowns when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (isProfileOpen) {
-        setIsProfileOpen(false);
-      }
-    };
-
-    if (isProfileOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isProfileOpen]);
 
   const handleLogout = async () => {
     try {
       await signOut(auth);
       setCurrentUser(null);
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('user');
-      }
-      setIsProfileOpen(false);
+      localStorage.removeItem('user');
       router.push('/');
     } catch (error) {
       console.error('Logout failed:', error);
-    }
-  };
-
-  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    const target = e.target as HTMLImageElement;
-    target.style.display = 'none';
-    
-    // Create fallback avatar
-    const fallback = target.nextElementSibling;
-    if (!fallback) {
-      const fallbackDiv = document.createElement('div');
-      fallbackDiv.className = 'w-8 h-8 rounded-full bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center text-emerald-600 font-medium';
-      fallbackDiv.textContent = currentUser?.name?.charAt(0)?.toUpperCase() || 'U';
-      target.parentNode?.insertBefore(fallbackDiv, target.nextSibling);
     }
   };
 
@@ -230,7 +128,10 @@ export default function Navigation() {
                       : 'text-gray-600 hover:text-emerald-600 hover:bg-gray-50/50'
                   }`}
                 >
-                  <Icon size={18} className={isActive(link.href) ? 'text-emerald-500' : 'text-gray-400'} />
+                  <Icon
+                    size={18}
+                    className={isActive(link.href) ? 'text-emerald-500' : 'text-gray-400'}
+                  />
                   <span>{link.label}</span>
                 </Link>
               );
@@ -242,58 +143,50 @@ export default function Navigation() {
                   onClick={() => setIsProfileOpen(!isProfileOpen)}
                   className="flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50/50 transition-colors duration-200"
                 >
-                  {currentUser?.photoURL ? (
-                    <img 
-                      src={currentUser.photoURL} 
-                      alt={currentUser.name || 'User'} 
-                      className="w-8 h-8 rounded-full object-cover border-2 border-white shadow-sm"
-                      onError={handleImageError}
+                  {/* ✅ Show profile photo if available */}
+                  {currentUser.photoURL ? (
+                    <img
+                      src={currentUser.photoURL}
+                      alt={currentUser.name}
+                      className="w-8 h-8 rounded-full object-cover"
                     />
                   ) : (
                     <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center text-emerald-600 font-medium">
                       {currentUser?.name?.charAt(0)?.toUpperCase() || 'U'}
                     </div>
                   )}
-                  <span className="hidden lg:inline">{currentUser?.name?.split(' ')[0] || 'User'}</span>
+                  <span className="hidden lg:inline">
+                    {currentUser?.name?.split(' ')[0] || 'User'}
+                  </span>
                   <ChevronDown
                     size={16}
-                    className={`transition-transform duration-200 ${isProfileOpen ? 'rotate-180' : ''}`}
+                    className={`transition-transform duration-200 ${
+                      isProfileOpen ? 'rotate-180' : ''
+                    }`}
                   />
                 </button>
 
                 {isProfileOpen && (
-                  <div className="absolute right-0 mt-2 w-56 rounded-xl bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
-                    <div className="p-4 border-b border-gray-100 flex items-center space-x-3">
-                      {currentUser.photoURL ? (
-                        <img 
-                          src={currentUser.photoURL} 
-                          alt={currentUser.name} 
-                          className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.style.display = 'none';
-                          }}
-                        />
-                      ) : <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center text-emerald-600 font-medium text-lg">
-                      {currentUser.name?.charAt(0)?.toUpperCase() || 'U'}
-                    </div>}
-                      
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">{currentUser.name}</p>
-                        <p className="text-xs text-gray-500">{currentUser.role === 'ADMIN' ? 'Administrator' : 'User'}</p>
-                      </div>
+                  <div className="absolute right-0 mt-2 w-56 rounded-xl bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                    <div className="p-4 border-b border-gray-100">
+                      <p className="text-sm font-medium text-gray-900">{currentUser.name}</p>
+                      <p className="text-xs text-gray-500">
+                        {currentUser.role === 'ADMIN' ? 'Administrator' : 'User'}
+                      </p>
                     </div>
                     <div className="py-1">
                       <Link
                         href="/userprofile"
                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                        onClick={() => setIsProfileOpen(false)}>
-                      Your Profile
+                        onClick={() => setIsProfileOpen(false)}
+                      >
+                        Your Profile
                       </Link>
                       <Link
                         href="/settings"
                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                        onClick={() => setIsProfileOpen(false)}>
+                        onClick={() => setIsProfileOpen(false)}
+                      >
                         Settings
                       </Link>
                     </div>
@@ -319,7 +212,11 @@ export default function Navigation() {
               aria-expanded="false"
             >
               <span className="sr-only">Open main menu</span>
-              {isMenuOpen ? <X size={24} className="text-gray-600" /> : <Menu size={24} className="text-gray-600" />}
+              {isMenuOpen ? (
+                <X size={24} className="text-gray-600" />
+              ) : (
+                <Menu size={24} className="text-gray-600" />
+              )}
             </button>
           </div>
         </div>
@@ -341,7 +238,10 @@ export default function Navigation() {
                         : 'text-gray-700 hover:text-emerald-600 hover:bg-gray-50/50'
                     }`}
                   >
-                    <Icon size={20} className={isActive(link.href) ? 'text-emerald-500' : 'text-gray-400'} />
+                    <Icon
+                      size={20}
+                      className={isActive(link.href) ? 'text-emerald-500' : 'text-gray-400'}
+                    />
                     <span>{link.label}</span>
                   </Link>
                 );
@@ -350,16 +250,27 @@ export default function Navigation() {
               {currentUser && (
                 <div className="pt-3 border-t border-gray-100 mt-3">
                   <div className="px-4 py-3 flex items-center space-x-3">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center text-emerald-600 font-medium">
-                      {currentUser.name?.charAt(0)?.toUpperCase() || 'U'}
-                    </div>
+                    {/* ✅ Mobile avatar */}
+                    {currentUser.photoURL ? (
+                      <img
+                        src={currentUser.photoURL}
+                        alt={currentUser.name}
+                        className="w-10 h-10 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center text-emerald-600 font-medium">
+                        {currentUser.name.charAt(0).toUpperCase()}
+                      </div>
+                    )}
                     <div>
                       <p className="text-sm font-medium text-gray-900">{currentUser.name}</p>
-                      <p className="text-xs text-gray-500">{currentUser.role === 'ADMIN' ? 'Administrator' : 'User'}</p>
+                      <p className="text-xs text-gray-500">
+                        {currentUser.role === 'ADMIN' ? 'Administrator' : 'User'}
+                      </p>
                     </div>
                   </div>
                   <div className="mt-2 space-y-1">
-                  <Link
+                    <Link
                       href="/userprofile"
                       onClick={() => {
                         setIsMenuOpen(false);
