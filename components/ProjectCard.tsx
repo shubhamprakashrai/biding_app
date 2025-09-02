@@ -409,12 +409,12 @@ export default function ProjectCard({
                 <h4 className="text-sm font-medium text-gray-700">Payment Details</h4>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs text-gray-500 mb-1">UPI ID</label>
+                    <label className="block text-xs text-gray-500 mb-1">Account Holder Name</label>
                     <input
                       type="text"
                       className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500"
                       placeholder="Account Holder Name"
-                      value={project.paymentDetails?.upiId || ''}
+                      value={project.paymentDetails?.accountHolderName || ''}
                       onChange={(e) => {
                         // TODO: Handle UPI ID update
                       }}
@@ -463,68 +463,15 @@ export default function ProjectCard({
                     </div>
                   </div>
 
-                  {(project.paymentDetails?.upiId || project.paymentDetails?.accountNumber) && (
+                  {(project.paymentDetails?.accountHolderName || project.paymentDetails?.accountName) && (
                     <div className="space-y-2">
                       <h4 className="text-sm font-medium text-gray-700">Payment Information</h4>
                       <div className="bg-gray-50 rounded-lg p-3 space-y-2 text-sm">
-                        {project.paymentDetails.upiId && (
+                      
+                        {project.paymentDetails.accountHolderName && (
                           <div className="flex justify-between">
-                            <span className="text-gray-500">UPI ID:</span>
-                            <div className="flex items-center">
-                              <span className="font-medium">{project.paymentDetails.upiId}</span>
-                              <button
-                                onClick={() => {
-                                  navigator.clipboard.writeText(project.paymentDetails?.upiId || '');
-                                  // TODO: Show toast notification
-                                }}
-                                className="ml-2 text-gray-400 hover:text-gray-600"
-                                title="Copy to clipboard"
-                              >
-                                <Copy size={14} />
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                        {project.paymentDetails.accountNumber && (
-                          <div className="flex justify-between">
-                            <span className="text-gray-500">Account Number:</span>
-                            <div className="flex items-center">
-                              <span className="font-medium">{project.paymentDetails.accountNumber}</span>
-                              <button
-                                onClick={() => {
-                                  navigator.clipboard.writeText(project.paymentDetails?.accountNumber || '');
-                                  // TODO: Show toast notification
-                                }}
-                                className="ml-2 text-gray-400 hover:text-gray-600"
-                                title="Copy to clipboard"
-                              >
-                                <Copy size={14} />
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                        {project.paymentDetails.ifscCode && (
-                          <div className="flex justify-between">
-                            <span className="text-gray-500">IFSC Code:</span>
-                            <div className="flex items-center">
-                              <span className="font-medium">{project.paymentDetails.ifscCode}</span>
-                              <button
-                                onClick={() => {
-                                  navigator.clipboard.writeText(project.paymentDetails?.ifscCode || '');
-                                  // TODO: Show toast notification
-                                }}
-                                className="ml-2 text-gray-400 hover:text-gray-600"
-                                title="Copy to clipboard"
-                              >
-                                <Copy size={14} />
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                        {project.paymentDetails.accountName && (
-                          <div className="flex justify-between">
-                            <span className="text-gray-500">Account Name:</span>
-                            <span className="font-medium">{project.paymentDetails.accountName}</span>
+                            <span className="text-gray-500">Account Holder Name:</span>
+                            <span className="font-medium">{project.paymentDetails.accountHolderName}</span>
                           </div>
                         )}
                       </div>

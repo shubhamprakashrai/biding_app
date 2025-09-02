@@ -22,9 +22,7 @@ export interface Project {
   contactName: string;
   paymentQrCode?: string;
   paymentDetails?: {
-    upiId?: string;
-    accountNumber?: string;
-    ifscCode?: string;
+    accountHolderName?: string;
     accountName?: string;
   };
   
