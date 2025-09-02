@@ -12,7 +12,7 @@ export interface Project {
   budget: number;
   deadline?: string;
   timeline: string | number;
-  status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+  status: 'PENDING' | 'IN_PROGRESS' | 'PAYMENT_PROCESSING' | 'PAYMENT_COMPLETED' | 'COMPLETED' | 'CANCELLED';
   userId: string;
   createdAt: string;
   email: string;

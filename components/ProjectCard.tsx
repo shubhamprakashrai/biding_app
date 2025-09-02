@@ -129,6 +129,8 @@ interface ProjectCardProps {
 const statusOptions: { value: Project['status']; label: string }[] = [
   { value: 'PENDING', label: 'Pending' },
   { value: 'IN_PROGRESS', label: 'In Progress' },
+  { value: 'PAYMENT_PROCESSING', label: 'Payment Processing' },
+  { value: 'PAYMENT_COMPLETED', label: 'Payment Completed' },
   { value: 'COMPLETED', label: 'Completed' },
   { value: 'CANCELLED', label: 'Cancelled' }
 ];
@@ -379,7 +381,7 @@ export default function ProjectCard({
 
 
       {/* Actions */}
-      {showActions && !isAdmin && projectStatus === 'PENDING' && (
+      {showActions && !isAdmin && projectStatus === 'PAYMENT_PROCESSING' && (
         <div className="border-t border-gray-100 p-4 bg-gray-50">
           <div className="flex space-x-2">
             <button 
