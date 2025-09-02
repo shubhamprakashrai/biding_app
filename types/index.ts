@@ -20,6 +20,13 @@ export interface Project {
   attachments?: string[];
   features?: string;  
   contactName: string;
+  paymentQrCode?: string;
+  paymentDetails?: {
+    upiId?: string;
+    accountNumber?: string;
+    ifscCode?: string;
+    accountName?: string;
+  };
   
 }
 
