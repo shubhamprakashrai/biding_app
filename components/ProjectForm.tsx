@@ -5,7 +5,7 @@ import { X, Plus, Upload, Trash2 } from 'lucide-react';
 import { auth, db, storage } from '@/app/firebase/firebase'; 
 import { doc, setDoc } from 'firebase/firestore';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytes, getDownloadURL, uploadBytesResumable } from 'firebase/storage';
 import { getAuth } from 'firebase/auth';
 import { Project } from '@/types';
 
@@ -80,45 +80,63 @@ export default function ProjectForm({ isOpen, onClose ,project, onSubmit}: Proje
     try {
       const auth = getAuth();
       const user = auth.currentUser;
-      if (!user) return alert("Login first!");
-  
+      if (!user) {
+        alert("Login first!");
+        return;
+      }
+    
       const uploadedFiles: string[] = [];
+    
       for (const file of files) {
-        const storageRef = ref(storage, `projects/${file.name}-${Date.now()}`);
-        await uploadBytes(storageRef, file);
-        const url = await getDownloadURL(storageRef);
+        const storageRef = ref(storage, `projects/${Date.now()}-${file.name}`);
+        const uploadTask = uploadBytesResumable(storageRef, file);
+    
+        const url: string = await new Promise((resolve, reject) => {
+          uploadTask.on(
+            "state_changed",
+            (snapshot) => {
+              const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+              console.log(`Upload of ${file.name}: ${progress.toFixed(0)}%`);
+            },
+            (error) => reject(error),
+            async () => {
+              const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+              resolve(downloadURL);
+            }
+          );
+        });
+    
         uploadedFiles.push(url);
       }
-  
+    
       const projectData: Project = {
         ...formData,
         budget: Number(formData.budget),
         timeline: Number(formData.timeline),
         userId: user.uid,
-        attachments: uploadedFiles.length
-          ? uploadedFiles
-          : project?.attachments || [],
+        attachments: uploadedFiles.length ? uploadedFiles : project?.attachments || [],
         status: project?.status || "PENDING",
         createdAt: project?.createdAt || new Date().toISOString(),
-        id: project?.id || "" // replaced later if new
+        id: project?.id || "",
       };
-  
+    
       if (project) {
-        // ✅ Update existing project
         await setDoc(doc(db, "projects", project.id), projectData);
         onSubmit?.({ ...projectData, id: project.id });
       } else {
-        // ✅ Create new project
         const docRef = await addDoc(collection(db, "projects"), projectData);
         onSubmit?.({ ...projectData, id: docRef.id });
       }
-  
+    
       onClose();
-    } catch (error) {
-      console.error(error);
+    } catch (error: any) {
+      console.error("Error uploading project:", error);
+      alert(`Upload failed: ${error.message || error}`);
     } finally {
       setLoading(false);
     }
+    
+    
   };
   
   
