@@ -56,6 +56,12 @@ export default function AdminPage() {
   const handleViewMessages = (projectId: string) => {
     setSelectedProjectForChat(projectId);
   };
+  const handlePaymentDetailsChange = (projectId: string, newPaymentDetails: Project['paymentDetails']) => {
+    const updatedProjects = projects.map(project =>
+      project.id === projectId ? { ...project, paymentDetails: newPaymentDetails } : project
+    );
+    setProjects(updatedProjects);
+  };
 
   const handleStatusChange = async (projectId: string, newStatus: Project['status']) => {
     try {
@@ -165,6 +171,7 @@ export default function AdminPage() {
                   isAdmin={currentUser.role === 'ADMIN'}
                   onViewMessages={handleViewMessages}
                   onStatusChange={handleStatusChange}
+                  onPaymentDetailsChange={handlePaymentDetailsChange}
                   onEdit={(project) => {
                     // Handle edit if needed
                     console.log('Edit project:', project);

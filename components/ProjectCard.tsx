@@ -28,6 +28,9 @@ const ImageViewer = ({ images, initialIndex, onClose, projectTitle }: ImageViewe
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [currentIndex]);
 
+
+  
+
   const handleNext = () => {
     setCurrentIndex((prev) => (prev + 1) % images.length);
   };
@@ -126,6 +129,7 @@ interface ProjectCardProps {
   onEdit?: (project: Project) => void;
   onStatusChange?: (projectId: string, newStatus: Project['status']) => void;
   className?: string;
+  onPaymentDetailsChange?: (projectId: string, newPaymentDetails: Project['paymentDetails']) => void;
 }
 
 const statusOptions: { value: Project['status']; label: string }[] = [
@@ -144,6 +148,7 @@ export default function ProjectCard({
   onViewMessages, 
   onEdit,  
   onStatusChange,
+  onPaymentDetailsChange,
   className 
 }: ProjectCardProps) {
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
@@ -152,6 +157,11 @@ export default function ProjectCard({
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [showPaymentDetails, setShowPaymentDetails] = useState(false);
+  const [paymentDetails, setPaymentDetails] = useState({
+    accountNumber: '',
+    ifscCode: '',
+    accountHolderName: ''
+  });
   const dropdownRef = useRef<HTMLDivElement>(null);
   const paymentModalRef = useRef<HTMLDivElement>(null);
 
@@ -166,6 +176,31 @@ export default function ProjectCard({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setPaymentDetails(prev => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleSubmitPaymentDetails = async () => {
+    try {
+      setIsProcessing(true);
+      onPaymentDetailsChange?.(project.id, paymentDetails);
+      // TODO: Call API to update payment details
+      console.log('Submitting payment details:', project.paymentDetails);
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Optionally, update the project state or show a success message
+    } catch (error) {
+      console.error('Error submitting payment details:', error);
+      // TODO: Show error message
+    } finally {
+      setIsProcessing(false);
+    }
+  };
   const handleStatusChange = (newStatus: Project['status']) => {
     onStatusChange?.(project.id, newStatus);
     setIsStatusDropdownOpen(false);
@@ -415,9 +450,7 @@ export default function ProjectCard({
                       className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500"
                       placeholder="Account Holder Name"
                       value={project.paymentDetails?.accountHolderName || ''}
-                      onChange={(e) => {
-                        // TODO: Handle UPI ID update
-                      }}
+                      onChange={handleInputChange}
                     />
                   </div>
                 
@@ -426,13 +459,26 @@ export default function ProjectCard({
                     <input
                       type="text"
                       className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                      placeholder="Account Holder Name"
+                      placeholder="Account  Name"
                       value={project.paymentDetails?.accountName || ''}
-                      onChange={(e) => {
-                        // TODO: Handle account name update
-                      }}
+                      onChange={handleInputChange}
                     />
                   </div>
+
+                  <div className="mt-4">
+                  <Button
+                    onClick={handleSubmitPaymentDetails}
+                    disabled={  isProcessing}
+                    className="w-full bg-emerald-600 hover:bg-emerald-700">
+                    {isProcessing ? (
+                      <>
+                        <Loader2 className="animate-spin h-4 w-4 mr-2" />
+                        Submitting...
+                      </>
+                    ) : 'Submit Payment Details'}
+                    </Button>
+                     </div>
+
                 </div>
               </div>
             </div>
