@@ -21,7 +21,7 @@ export default function ProjectForm({ isOpen, onClose ,project, onSubmit}: Proje
   const [files, setFiles] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<Omit<Project, 'id' | 'userId' | 'attachments' | 'status' | 'createdAt'>>({
     title: '',
     description: '',
     features: '',
@@ -114,11 +114,11 @@ export default function ProjectForm({ isOpen, onClose ,project, onSubmit}: Proje
     
       const projectData: Project = {
         ...formData,
+        id: project?.id || "",
         userId: user.uid,
         attachments: uploadedFiles.length ? uploadedFiles : project?.attachments || [],
         status: project?.status || "PENDING",
-        createdAt: project?.createdAt || new Date().toISOString(),
-        id: project?.id || "",
+        createdAt: project?.createdAt || new Date().toISOString()
       };
 
       console.log("projectData: ", projectData);
@@ -127,8 +127,11 @@ export default function ProjectForm({ isOpen, onClose ,project, onSubmit}: Proje
         await setDoc(doc(db, "projects", project.id), projectData);
         onSubmit?.({ ...projectData, id: project.id });
       } else {
-        const docRef = await addDoc(collection(db, "projects"), projectData);
-        onSubmit?.({ ...projectData, id: docRef.id });
+        const docRef = doc(collection(db, "projects")); // generates an ID but doesn't write yet
+        const projectDataWithId: Project = { ...projectData, id: docRef.id };
+        await setDoc(docRef, projectDataWithId);
+
+        onSubmit?.(projectDataWithId);
       }
     
       onClose();
