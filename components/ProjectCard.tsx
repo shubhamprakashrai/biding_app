@@ -4,6 +4,17 @@ import { cn } from '@/lib/utils';
 import { useState, useRef, useEffect } from 'react';
 import { Button } from './ui/button';
 import { PaymentQrUpload } from './PaymentQrUpload';
+import dynamic from 'next/dynamic';
+
+// Dynamically import QrCodeSelector to avoid SSR issues with Firestore
+const QrCodeSelector = dynamic(() => import('./QrCodeSelector'), {
+  ssr: false,
+  loading: () => (
+    <div className="flex items-center justify-center p-4">
+      <Loader2 className="h-5 w-5 animate-spin text-gray-500" />
+    </div>
+  )
+});
 
 interface ImageViewerProps {
   images: string[];
@@ -129,7 +140,6 @@ interface ProjectCardProps {
   onEdit?: (project: Project) => void;
   onStatusChange?: (projectId: string, newStatus: Project['status']) => void;
   className?: string;
-  onPaymentDetailsChange?: (projectId: string, newPaymentDetails: Project['paymentDetails']) => void;
 }
 
 const statusOptions: { value: Project['status']; label: string }[] = [
@@ -148,63 +158,45 @@ export default function ProjectCard({
   onViewMessages, 
   onEdit,  
   onStatusChange,
-  onPaymentDetailsChange,
   className 
 }: ProjectCardProps) {
+
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
-  const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  // const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [showPaymentDetails, setShowPaymentDetails] = useState(false);
-  const [paymentDetails, setPaymentDetails] = useState({
-    accountNumber: '',
-    ifscCode: '',
-    accountHolderName: ''
-  });
+  const [showQrCodeSelector, setShowQrCodeSelector] = useState(false);
+  
+
+  
+  // Update payment details when project prop changes
+  useEffect(() => {
+   
+  }, []);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const paymentModalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsStatusDropdownOpen(false);
+        setOpenDropdownId(null); // ✅ close when clicking outside
       }
     };
-
+  
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+  
 
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setPaymentDetails(prev => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
+  
 
-  const handleSubmitPaymentDetails = async () => {
-    try {
-      setIsProcessing(true);
-      onPaymentDetailsChange?.(project.id, paymentDetails);
-      // TODO: Call API to update payment details
-      console.log('Submitting payment details:', project.paymentDetails);
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      // Optionally, update the project state or show a success message
-    } catch (error) {
-      console.error('Error submitting payment details:', error);
-      // TODO: Show error message
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-  const handleStatusChange = (newStatus: Project['status']) => {
-    onStatusChange?.(project.id, newStatus);
-    setIsStatusDropdownOpen(false);
-  };
+  
+ 
+
   const getStatusConfig = (status: Project['status']) => {
     const baseStyles = 'px-2.5 py-1 rounded-full text-xs font-medium inline-flex items-center';
     
@@ -273,9 +265,20 @@ export default function ProjectCard({
       <div className="p-5 flex-1 flex flex-col min-w-0">
         {/* Header with status */}
         <div className="flex justify-between items-start mb-4">
-          <h3 className="text-lg font-semibold text-gray-900 group-hover:text-emerald-600 transition-colors duration-200 line-clamp-2">
-            {project.title}
-          </h3>
+          <div className="flex-1 min-w-0">
+            <h3 className="text-lg font-semibold text-gray-900 group-hover:text-emerald-600 transition-colors duration-200 line-clamp-2">
+              {project.title}
+            </h3>
+            {/* QR Code Selector for Payment Processing */}
+            {project.status === 'PAYMENT_PROCESSING' && isAdmin && (
+              <div className="mt-2">
+                <QrCodeSelector 
+                  projectId={project.id}
+                  currentQrCode={project.paymentQrCode}
+                />
+              </div>
+            )}
+          </div>
           <div className="flex items-center">
             <div className={cn(
               statusConfig.className,
@@ -291,27 +294,39 @@ export default function ProjectCard({
                     className="ml-1" 
                     onClick={(e) => {
                       e.stopPropagation();
-                      setIsStatusDropdownOpen(!isStatusDropdownOpen);
+                      setOpenDropdownId(openDropdownId === project.id ? null : project.id);
                     }}
                   />
-                  {isStatusDropdownOpen && (
-                    <div className="absolute right-0 mt-1 w-40 bg-white rounded-md shadow-lg z-10 border border-gray-200">
+                  {openDropdownId === project.id && (<div className="absolute right-0 mt-1 w-40 bg-white rounded-md shadow-lg z-10 border border-gray-200">
                       <div className="py-1">
-                        {statusOptions.map((option) => (
-                          <button
-                            key={option.value}
-                            type="button"
-                            className={cn(
-                              'w-full text-left px-4 py-2 text-sm flex items-center justify-between',
-                              'hover:bg-gray-50',
-                              project.status === option.value ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
-                            )}
-                            onClick={() => handleStatusChange(option.value)}
-                          >
-                            {option.label}
-                            {project.status === option.value && <Check size={16} />}
-                          </button>
-                        ))}
+                      {statusOptions.map((option) => (
+  <button
+    key={option.value}
+    type="button"
+    className={cn(
+      'w-full text-left px-4 py-2 text-sm flex items-center justify-between',
+      'hover:bg-gray-50',
+      project.status === option.value ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+    )}
+    onClick={() => {
+      setOpenDropdownId(null); // ✅ close dropdown
+      if (!project?.id) {
+        console.error("Project ID missing for status change:", project);
+        return;
+      }
+      console.log("Attempting status change:", {
+        projectId: project.id,
+        newStatus: option.value,
+        projectTitle: project.title,
+      });
+      onStatusChange?.(project.id, option.value); // ✅ always pass the Firestore doc ID
+    }}
+  >
+    {option.label}
+    {project.status === option.value && <Check size={16} />}
+  </button>
+))}
+
                       </div>
                     </div>
                   )}
@@ -418,145 +433,24 @@ export default function ProjectCard({
       )}
 
 
-      {/* Payment Action */}
-      {showActions && projectStatus === 'PAYMENT_PROCESSING' && (
-        <div className="border-t border-gray-100 p-4 bg-gray-50">
-          {isAdmin ? (
-            <div className="space-y-4">
-              <h3 className="text-sm font-medium text-gray-700">Payment Setup</h3>
-              <PaymentQrUpload
-                projectId={project.id}
-                currentQrCode={project.paymentQrCode}
-                onUpload={async (file) => {
-                  // TODO: Implement QR code upload logic
-                  console.log('Uploading QR code:', file);
-                  // Simulate upload
-                  return new Promise(resolve => setTimeout(resolve, 1000));
-                }}
-                onRemove={async () => {
-                  // TODO: Implement QR code removal logic
-                  console.log('Removing QR code');
-                  return new Promise(resolve => setTimeout(resolve, 500));
-                }}
-              />
-              
-              <div className="space-y-2">
-                <h4 className="text-sm font-medium text-gray-700">Payment Details</h4>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">Account Holder Name</label>
-                    <input
-                      type="text"
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                      placeholder="Account Holder Name"
-                      value={project.paymentDetails?.accountHolderName || ''}
-                      onChange={handleInputChange}
-                    />
-                  </div>
-                
-                  <div>
-                    <label className="block text-xs text-gray-500 mb-1">Account Name</label>
-                    <input
-                      type="text"
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                      placeholder="Account  Name"
-                      value={project.paymentDetails?.accountName || ''}
-                      onChange={handleInputChange}
-                    />
-                  </div>
-
-                  <div className="mt-4">
-                  <Button
-                    onClick={handleSubmitPaymentDetails}
-                    disabled={  isProcessing}
-                    className="w-full bg-emerald-600 hover:bg-emerald-700">
-                    {isProcessing ? (
-                      <>
-                        <Loader2 className="animate-spin h-4 w-4 mr-2" />
-                        Submitting...
-                      </>
-                    ) : 'Submit Payment Details'}
-                    </Button>
-                     </div>
-
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <h3 className="text-sm font-medium text-gray-700">Complete Payment</h3>
-                {project.paymentQrCode && (
-                  <button
-                    onClick={() => setShowPaymentDetails(!showPaymentDetails)}
-                    className="text-xs text-emerald-600 hover:text-emerald-700"
-                  >
-                    {showPaymentDetails ? 'Hide Details' : 'View Payment Details'}
-                  </button>
-                )}
-              </div>
-              
-              {showPaymentDetails && project.paymentQrCode && (
-                <div className="space-y-4">
-                  <div className="flex justify-center">
-                    <div className="border rounded-lg p-4 bg-white">
-                      <img
-                        src={project.paymentQrCode}
-                        alt="Payment QR Code"
-                        className="w-48 h-48 object-contain mx-auto"
-                      />
-                      <p className="text-xs text-center text-gray-500 mt-2">Scan this QR code to make payment</p>
-                    </div>
-                  </div>
-
-                  {(project.paymentDetails?.accountHolderName || project.paymentDetails?.accountName) && (
-                    <div className="space-y-2">
-                      <h4 className="text-sm font-medium text-gray-700">Payment Information</h4>
-                      <div className="bg-gray-50 rounded-lg p-3 space-y-2 text-sm">
-                      
-                        {project.paymentDetails.accountHolderName && (
-                          <div className="flex justify-between">
-                            <span className="text-gray-500">Account Holder Name:</span>
-                            <span className="font-medium">{project.paymentDetails.accountHolderName}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="pt-2">
-                    <Button
-                      className="w-full bg-emerald-600 hover:bg-emerald-700"
-                      onClick={() => setShowPaymentModal(true)}
-                    >
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      I've Made the Payment
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      )}
+    
 
       {/* Payment Modal */}
-      {showPaymentModal && (
+      {showPaymentDetails && (
         <div 
           className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-          onClick={(e) => e.target === e.currentTarget && setShowPaymentModal(false)}
+          onClick={(e) => e.target === e.currentTarget && setShowPaymentDetails(false)}
         >
           <div 
             ref={paymentModalRef}
             className="bg-white rounded-xl w-full max-w-md p-6 relative"
           >
             <button 
-              onClick={() => setShowPaymentModal(false)}
+              onClick={() => setShowPaymentDetails(false)}
               className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
             >
               <X size={20} />
             </button>
-            
             <div className="space-y-6">
               <div className="text-center">
                 <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-emerald-100 mb-3">
@@ -574,7 +468,25 @@ export default function ProjectCard({
               </div>
 
               {!paymentSuccess ? (
-                <div className="space-y-4">
+                <form 
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    setIsProcessing(true);
+                    try {
+                      // Simulate payment processing
+                      await new Promise(resolve => setTimeout(resolve, 2000));
+                      setPaymentSuccess(true);
+                      if (onStatusChange) {
+                        onStatusChange(project.id, 'PAYMENT_COMPLETED');
+                      }
+                    } catch (error) {
+                      console.error('Error processing payment:', error);
+                    } finally {
+                      setIsProcessing(false);
+                    }
+                  }}
+                  className="space-y-4"
+                >
                   <div className="space-y-2">
                     <p className="text-sm text-gray-600">
                       Please make the payment using the provided QR code or payment details, then confirm your payment below.
@@ -587,7 +499,9 @@ export default function ProjectCard({
                         placeholder="Enter transaction ID or UTR number"
                         required
                       />
-                      <p className="text-xs text-gray-500">Please enter the transaction ID or UTR number from your payment receipt</p>
+                      <p className="text-xs text-gray-500">
+                        Please enter the transaction ID or UTR number from your payment receipt
+                      </p>
                     </div>
                     
                     <div className="mt-4">
@@ -602,61 +516,51 @@ export default function ProjectCard({
                         </span>
                       </label>
                     </div>
-                  </div>
 
-                  <div className="flex justify-between pt-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => setShowPaymentModal(false)}
-                      disabled={isProcessing}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      className="bg-emerald-600 hover:bg-emerald-700"
-                      onClick={async () => {
-                        setIsProcessing(true);
-                        try {
-                          // TODO: Submit payment confirmation to the server
-                          await new Promise(resolve => setTimeout(resolve, 1500));
-                          setPaymentSuccess(true);
-                          // Close modal after 2 seconds
-                          setTimeout(() => {
-                            setShowPaymentModal(false);
-                            setPaymentSuccess(false);
-                            // TODO: Refresh project status
-                          }, 2000);
-                        } catch (error) {
-                          console.error('Error confirming payment:', error);
-                          // TODO: Show error message
-                        } finally {
-                          setIsProcessing(false);
-                        }
-                      }}
-                      disabled={isProcessing}
-                    >
-                      {isProcessing ? (
-                        <>
-                          <Loader2 className="animate-spin h-4 w-4 mr-2" />
-                          Confirming...
-                        </>
-                      ) : (
-                        'Confirm Payment'
-                      )}
-                    </Button>
+                    <div className="mt-6 flex justify-between">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setShowPaymentDetails(false)}
+                        disabled={isProcessing}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        type="submit"
+                        disabled={isProcessing}
+                        className="bg-emerald-600 hover:bg-emerald-700"
+                      >
+                        {isProcessing ? (
+                          <>
+                            <Loader2 className="animate-spin h-4 w-4 mr-2" />
+                            Processing...
+                          </>
+                        ) : 'Confirm Payment'}
+                      </Button>
+                    </div>
+                    <p className="text-xs text-gray-500 text-center mt-4">
+                      Your payment is secured with 256-bit encryption
+                    </p>
                   </div>
-                </div>
+                </form>
               ) : (
-                <div className="text-center py-4">
-                  <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-3">
-                    <Check className="h-6 w-6 text-green-600" />
-                  </div>
+                <div className="text-center">
+                  <CheckCircle className="h-12 w-12 text-emerald-500 mx-auto mb-4" />
+                  <p className="text-sm text-gray-600 mb-6">
+                    Your payment confirmation has been received. We'll verify and update the project status shortly.
+                  </p>
+                  <Button 
+                    onClick={() => {
+                      setShowPaymentDetails(false);
+                      setPaymentSuccess(false);
+                    }}
+                    className="bg-emerald-600 hover:bg-emerald-700"
+                  >
+                    Close
+                  </Button>
                 </div>
               )}
-
-              <p className="text-xs text-gray-500 text-center">
-                Your payment is secured with 256-bit encryption
-              </p>
             </div>
           </div>
         </div>

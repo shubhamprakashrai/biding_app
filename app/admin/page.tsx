@@ -7,9 +7,10 @@ import Layout from '@/components/Layout';
 import ChatComponent from '@/components/ChatComponent';
 import { projects as initialProjects, proposals as initialProposals, messages as initialMessages } from '@/data/dummy';
 import { Project, Proposal, Message } from '@/types';
-import { Users, Briefcase, FileText, MessageSquare, DollarSign } from 'lucide-react';
+import { Users, Briefcase, FileText, MessageSquare, DollarSign, Image as ImageIcon } from 'lucide-react';
 import { collection, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase/firebase';
+import QrUpload from '@/components/QrUpload';
 
 export default function AdminPage() {
   const [projects, setProjects] = useState<Project[]>(initialProjects);
@@ -56,12 +57,7 @@ export default function AdminPage() {
   const handleViewMessages = (projectId: string) => {
     setSelectedProjectForChat(projectId);
   };
-  const handlePaymentDetailsChange = (projectId: string, newPaymentDetails: Project['paymentDetails']) => {
-    const updatedProjects = projects.map(project =>
-      project.id === projectId ? { ...project, paymentDetails: newPaymentDetails } : project
-    );
-    setProjects(updatedProjects);
-  };
+  
 
   const handleStatusChange = async (projectId: string, newStatus: Project['status']) => {
     try {
@@ -149,7 +145,24 @@ export default function AdminPage() {
             <DollarSign className="text-purple-600" size={24} />
           </div>
         </div>
+
+        <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">QR Code</p>
+              <p className="text-2xl font-bold text-indigo-600">Upload</p>
+            </div>
+            <div className="p-2 rounded-full bg-indigo-100">
+              <ImageIcon className="text-indigo-600" size={20} />
+            </div>
+          </div>
+          <div className="mt-4">
+            <QrUpload />
+          </div>
+        </div>
       </div>
+
+     
 
       {/* Available Projects */}
       <div className="bg-white rounded-lg shadow-md border border-gray-200 mb-8">
@@ -171,7 +184,6 @@ export default function AdminPage() {
                   isAdmin={currentUser.role === 'ADMIN'}
                   onViewMessages={handleViewMessages}
                   onStatusChange={handleStatusChange}
-                  onPaymentDetailsChange={handlePaymentDetailsChange}
                   onEdit={(project) => {
                     // Handle edit if needed
                     console.log('Edit project:', project);
