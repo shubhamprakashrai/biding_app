@@ -5,6 +5,8 @@ import { useState, useRef, useEffect } from 'react';
 import { Button } from './ui/button';
 import { PaymentQrUpload } from './PaymentQrUpload';
 import dynamic from 'next/dynamic';
+import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from '@/app/firebase/firebase';
 
 // Dynamically import QrCodeSelector to avoid SSR issues with Firestore
 const QrCodeSelector = dynamic(() => import('./QrCodeSelector'), {
@@ -166,36 +168,99 @@ export default function ProjectCard({
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
 
   const [isProcessing, setIsProcessing] = useState(false);
-  const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [selectedQrCode, setSelectedQrCode] = useState<string | null>(project.paymentQrCode || null);
+  const [showQrError, setShowQrError] = useState(false);
   const [showPaymentDetails, setShowPaymentDetails] = useState(false);
   const [showQrCodeSelector, setShowQrCodeSelector] = useState(false);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
   
 
   
-  // Update payment details when project prop changes
+  // Update selected QR code when project prop changes
   useEffect(() => {
-   
-  }, []);
+    if (project.paymentQrCode) {
+      setSelectedQrCode(project.paymentQrCode);
+    }
+  }, [project.paymentQrCode]);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const paymentModalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setOpenDropdownId(null); // ✅ close when clicking outside
+        setOpenDropdownId(null); // close when clicking outside
       }
     };
   
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-  
 
-
+  const handleStatusChange = async (newStatus: Project['status']) => {
+    if (!project?.id) {
+      console.error("Project ID missing for status change");
+      return;
+    }
   
-
+    // For PAYMENT_PROCESSING, ensure we have a QR code
+    if (newStatus === 'PAYMENT_PROCESSING') {
+      // If no QR code is selected, show the QR code selector
+      if (!selectedQrCode && !project.paymentQrCode) {
+        setShowQrCodeSelector(true);
+        setShowQrError(true);
+        return;
+      }
+      
+      // If we have a selected QR code but it's not saved to the project yet
+      if (selectedQrCode && selectedQrCode !== project.paymentQrCode) {
+        try {
+          const projectRef = doc(db, 'projects', project.id);
+          await updateDoc(projectRef, {
+            paymentQrCode: selectedQrCode,
+            status: 'PAYMENT_PROCESSING',
+            updatedAt: serverTimestamp()
+          });
+          
+          // Update local state and call the callback
+          onStatusChange?.(project.id, 'PAYMENT_PROCESSING');
+          setShowQrError(false);
+          return; // Exit early after handling payment processing
+        } catch (error) {
+          console.error('Error updating QR code:', error);
+          return;
+        }
+      } else if (project.paymentQrCode) {
+        // If we already have a QR code saved, just update the status
+        try {
+          const projectRef = doc(db, 'projects', project.id);
+          await updateDoc(projectRef, {
+            status: 'PAYMENT_PROCESSING',
+            updatedAt: serverTimestamp()
+          });
+          onStatusChange?.(project.id, 'PAYMENT_PROCESSING');
+          return;
+        } catch (error) {
+          console.error('Error updating project status:', error);
+          return;
+        }
+      }
+    }
+    
+    // For other status changes
+    try {
+      const projectRef = doc(db, 'projects', project.id);
+      await updateDoc(projectRef, {
+        status: newStatus,
+        updatedAt: serverTimestamp()
+      });
+      onStatusChange?.(project.id, newStatus);
+      setShowQrError(false);
+    } catch (error) {
+      console.error('Error updating project status:', error);
+    }
+  };
   
- 
 
   const getStatusConfig = (status: Project['status']) => {
     const baseStyles = 'px-2.5 py-1 rounded-full text-xs font-medium inline-flex items-center';
@@ -270,12 +335,18 @@ export default function ProjectCard({
               {project.title}
             </h3>
             {/* QR Code Selector for Payment Processing */}
-            {project.status === 'PAYMENT_PROCESSING' && isAdmin && (
+            {(project.status === 'PAYMENT_PROCESSING' || showQrError) && isAdmin && (
               <div className="mt-2">
                 <QrCodeSelector 
                   projectId={project.id}
-                  currentQrCode={project.paymentQrCode}
+                  currentQrCode={selectedQrCode || project.paymentQrCode}
+                  onQrCodeSelect={setSelectedQrCode}
                 />
+                {showQrError && !selectedQrCode && (
+                  <p className="mt-1 text-sm text-red-600">
+                    Please select a QR code before setting status to Payment Processing
+                  </p>
+                )}
               </div>
             )}
           </div>
@@ -309,17 +380,8 @@ export default function ProjectCard({
       project.status === option.value ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
     )}
     onClick={() => {
-      setOpenDropdownId(null); // ✅ close dropdown
-      if (!project?.id) {
-        console.error("Project ID missing for status change:", project);
-        return;
-      }
-      console.log("Attempting status change:", {
-        projectId: project.id,
-        newStatus: option.value,
-        projectTitle: project.title,
-      });
-      onStatusChange?.(project.id, option.value); // ✅ always pass the Firestore doc ID
+      setOpenDropdownId(null); // close dropdown
+      handleStatusChange(option.value);
     }}
   >
     {option.label}
@@ -434,6 +496,46 @@ export default function ProjectCard({
 
 
     
+
+      {/* QR Code Selector Modal */}
+      {showQrCodeSelector && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          onClick={(e) => e.target === e.currentTarget && setShowQrCodeSelector(false)}
+        >
+          <div 
+            className="bg-white rounded-xl w-full max-w-md p-6 relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button 
+              onClick={() => setShowQrCodeSelector(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+            >
+              <X size={20} />
+            </button>
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium text-gray-900">Select Payment QR Code</h3>
+              <QrCodeSelector 
+                onSelectQrCode={(qrCode) => {
+                  setSelectedQrCode(qrCode);
+                  setShowQrError(false);
+                  setShowQrCodeSelector(false);
+                  // Automatically update status after QR code selection
+                  handleStatusChange('PAYMENT_PROCESSING');
+                }} 
+              />
+              <div className="flex justify-end gap-3 pt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowQrCodeSelector(false)}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Payment Modal */}
       {showPaymentDetails && (

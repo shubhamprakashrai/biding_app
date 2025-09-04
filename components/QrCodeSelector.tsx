@@ -1,21 +1,56 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { doc, updateDoc, getDoc } from 'firebase/firestore';
+import { doc, updateDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/app/firebase/firebase';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2 } from 'lucide-react';
 
-interface QrCodeSelectorProps {
-  projectId: string;
-  currentQrCode?: string;
+interface QRCode {
+  id: string;
+  name: string;
+  url: string;
 }
 
-export default function QrCodeSelector({ projectId, currentQrCode }: QrCodeSelectorProps) {
-  const [qrCodes, setQrCodes] = useState<string[]>([]);
+interface QrCodeSelectorProps {
+  projectId?: string;
+  currentQrCode?: string;
+  onQrCodeSelect?: (qrId: string) => void;
+  onSelectQrCode?: (qrId: string) => void;
+}
+
+export default function QrCodeSelector({ projectId, currentQrCode, onQrCodeSelect, onSelectQrCode }: QrCodeSelectorProps) {
+  const [qrCodes, setQrCodes] = useState<QRCode[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedQr, setSelectedQr] = useState(currentQrCode || '');
 
+  const handleQrCodeSelect = async (qrId: string) => {
+    setSelectedQr(qrId);
+    
+    // Call the onSelectQrCode callback if provided
+    if (onSelectQrCode) {
+      onSelectQrCode(qrId);
+      return;
+    }
+    
+    // Legacy support for onQrCodeSelect
+    if (projectId) {
+      try {
+        const projectRef = doc(db, 'projects', projectId);
+        await updateDoc(projectRef, {
+          paymentQrCode: qrId,
+          updatedAt: serverTimestamp()
+        });
+        onQrCodeSelect?.(qrId);
+      } catch (error) {
+        console.error('Error updating project with QR code:', error);
+      }
+    } else {
+      onQrCodeSelect?.(qrId);
+    }
+  };
+
+  // Fetch QR codes from Firestore
   useEffect(() => {
     const fetchQrCodes = async () => {
       try {
@@ -24,11 +59,16 @@ export default function QrCodeSelector({ projectId, currentQrCode }: QrCodeSelec
         
         if (docSnap.exists()) {
           const data = docSnap.data();
-          setQrCodes(data.urls || []);
-          
-          // If no current QR code is set, use the first one
-          if (!currentQrCode && data.urls?.length > 0) {
-            setSelectedQr(data.urls[0]);
+          if (data && Array.isArray(data.qrCodes)) {
+            let codes = [...data.qrCodes];
+            
+            // If there's a current QR code, make sure it's in the list
+            if (currentQrCode && !codes.some((q: QRCode) => q.id === currentQrCode)) {
+              // If the current QR code is not in the list, add it
+              codes.push({ id: currentQrCode, name: 'Current QR Code', url: currentQrCode });
+            }
+            
+            setQrCodes(codes);
           }
         }
       } catch (error) {
@@ -37,24 +77,12 @@ export default function QrCodeSelector({ projectId, currentQrCode }: QrCodeSelec
         setLoading(false);
       }
     };
-
+    
     fetchQrCodes();
   }, [currentQrCode]);
 
   const handleQrCodeChange = async (value: string) => {
-    setSelectedQr(value);
-    
-    try {
-      const projectRef = doc(db, 'projects', projectId);
-      await updateDoc(projectRef, {
-        paymentQrCode: value,
-        updatedAt: new Date().toISOString()
-      });
-    } catch (error) {
-      console.error('Error updating QR code:', error);
-      // Revert the UI on error
-      setSelectedQr(currentQrCode || '');
-    }
+    await handleQrCodeSelect(value);
   };
 
   if (loading) {
@@ -70,25 +98,26 @@ export default function QrCodeSelector({ projectId, currentQrCode }: QrCodeSelec
   }
 
   return (
-    <div className="space-y-2">
-      <label className="block text-sm font-medium text-gray-700 mb-1">Payment QR Code</label>
-      <Select value={selectedQr} onValueChange={handleQrCodeChange}>
+    <div className="w-full">
+      <Select value={selectedQr} onValueChange={handleQrCodeChange} disabled={loading}>
         <SelectTrigger className="w-full">
           <SelectValue placeholder="Select a QR code" />
         </SelectTrigger>
         <SelectContent>
-          {qrCodes.map((url, index) => (
-            <SelectItem key={index} value={url}>
-              QR Code {index + 1}
+          {qrCodes.map((qr) => (
+            <SelectItem key={qr.id} value={qr.id}>
+              <div className="flex items-center">
+                <img src={qr.url} alt={qr.name} className="w-6 h-6 mr-2" />
+                <span>{qr.name}</span>
+              </div>
             </SelectItem>
           ))}
         </SelectContent>
       </Select>
-      
       {selectedQr && (
         <div className="mt-2 p-2 border rounded-md">
           <img 
-            src={selectedQr} 
+            src={qrCodes.find(qr => qr.id === selectedQr)?.url} 
             alt="Selected QR Code" 
             className="h-32 w-32 mx-auto object-contain"
           />
