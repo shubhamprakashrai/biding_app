@@ -22,10 +22,7 @@ export interface Project {
   features?: string;  
   contactName: string;
   paymentQrCode?: string;
-  paymentDetails?: {
-    accountHolderName?: string;
-    accountName?: string;
-  };
+  
   
 }
 
