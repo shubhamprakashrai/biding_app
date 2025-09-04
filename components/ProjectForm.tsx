@@ -21,7 +21,7 @@ export default function ProjectForm({ isOpen, onClose ,project, onSubmit}: Proje
   const [files, setFiles] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<Omit<Project, 'id' | 'userId' | 'attachments' | 'status' | 'createdAt'>>({
     title: '',
     description: '',
     features: '',
@@ -29,7 +29,8 @@ export default function ProjectForm({ isOpen, onClose ,project, onSubmit}: Proje
     timeline: 0,
     contactName: '',
     email: '',
-    phone: ''
+    phone: '',
+    whatsapp: ''
   });
   useEffect(() => {
     if (project) {
@@ -41,7 +42,8 @@ export default function ProjectForm({ isOpen, onClose ,project, onSubmit}: Proje
         timeline: project.timeline ? Number(project.timeline) : 0,
         contactName: project.contactName || '',
         email: project.email || '',
-        phone: project.phone || ''
+        phone: project.phone || '',
+        whatsapp: project.whatsapp || ''
       });
     } else {
       setFormData({
@@ -52,7 +54,8 @@ export default function ProjectForm({ isOpen, onClose ,project, onSubmit}: Proje
         timeline: 0,
         contactName: '',
         email: '',
-        phone: ''
+        phone: '',
+        whatsapp: ''
       });
       setFiles([]);
     }
@@ -111,21 +114,24 @@ export default function ProjectForm({ isOpen, onClose ,project, onSubmit}: Proje
     
       const projectData: Project = {
         ...formData,
-        budget: Number(formData.budget),
-        timeline: Number(formData.timeline),
+        id: project?.id || "",
         userId: user.uid,
         attachments: uploadedFiles.length ? uploadedFiles : project?.attachments || [],
         status: project?.status || "PENDING",
-        createdAt: project?.createdAt || new Date().toISOString(),
-        id: project?.id || "",
+        createdAt: project?.createdAt || new Date().toISOString()
       };
+
+      console.log("projectData: ", projectData);
     
       if (project) {
         await setDoc(doc(db, "projects", project.id), projectData);
         onSubmit?.({ ...projectData, id: project.id });
       } else {
-        const docRef = await addDoc(collection(db, "projects"), projectData);
-        onSubmit?.({ ...projectData, id: docRef.id });
+        const docRef = doc(collection(db, "projects")); // generates an ID but doesn't write yet
+        const projectDataWithId: Project = { ...projectData, id: docRef.id };
+        await setDoc(docRef, projectDataWithId);
+
+        onSubmit?.(projectDataWithId);
       }
     
       onClose();
@@ -157,7 +163,7 @@ export default function ProjectForm({ isOpen, onClose ,project, onSubmit}: Proje
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center p-6 border-b border-gray-200">
-          <h2 className="text-2xl font-bold text-gray-900">Create New Project</h2>
+          <h2 className="text-2xl font-bold text-gray-900">Create New App</h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 transition-colors duration-200"
@@ -170,7 +176,7 @@ export default function ProjectForm({ isOpen, onClose ,project, onSubmit}: Proje
           {/* Title */}
           <div>
             <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
-              Project Title *
+              App Title *
             </label>
             <input
               type="text"
@@ -187,7 +193,7 @@ export default function ProjectForm({ isOpen, onClose ,project, onSubmit}: Proje
           {/* Description */}
           <div>
             <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
-              Project Description *
+              App Description *
             </label>
             <textarea
               id="description"
@@ -215,44 +221,6 @@ export default function ProjectForm({ isOpen, onClose ,project, onSubmit}: Proje
               className="w-full px-4 py-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 resize-none"
               placeholder="List the key features..."
             />
-          </div>
-
-          {/* Budget & Timeline */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label htmlFor="budget" className="block text-sm font-medium text-gray-700 mb-2">
-                Budget (USD) *
-              </label>
-              <input
-                type="number"
-                id="budget"
-                name="budget"
-                value={formData.budget}
-                onChange={handleChange}
-                required
-                min="0"
-                step="0.01"
-                className="w-full px-4 py-3 border border-gray-300 rounded-md"
-                placeholder="5000"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="timeline" className="block text-sm font-medium text-gray-700 mb-2">
-                Timeline (weeks) *
-              </label>
-              <input
-                type="number"
-                id="timeline"
-                name="timeline"
-                value={formData.timeline}
-                onChange={handleChange}
-                required
-                min="1"
-                className="w-full px-4 py-3 border border-gray-300 rounded-md"
-                placeholder="e.g., 8"
-              />
-            </div>
           </div>
 
           {/* File Upload */}
@@ -313,7 +281,7 @@ export default function ProjectForm({ isOpen, onClose ,project, onSubmit}: Proje
 
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                Email *
+                Contact Email *
               </label>
               <input
                 type="email"
@@ -340,7 +308,22 @@ export default function ProjectForm({ isOpen, onClose ,project, onSubmit}: Proje
                 className="w-full px-4 py-3 border border-gray-300 rounded-md"
               />
             </div>
+            <div>
+              <label htmlFor="whatsapp" className="block text-sm font-medium text-gray-700 mb-2">
+                Whatsapp Number *
+              </label>
+              <input
+                type="tel"
+                id="whatsapp"
+                name="whatsapp"
+                value={formData.whatsapp}
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-3 border border-gray-300 rounded-md"
+              />
           </div>
+          </div>
+
 
           {/* Buttons */}
           <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">

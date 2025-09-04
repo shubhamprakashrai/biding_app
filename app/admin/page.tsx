@@ -2,9 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import ProjectCard from '@/components/ProjectCard';
-import ProposalForm from '@/components/ProposalForm';
-import Layout from '@/components/Layout';
-import ChatComponent from '@/components/ChatComponent';
 import { projects as initialProjects, proposals as initialProposals, messages as initialMessages } from '@/data/dummy';
 import { Project, Proposal, Message } from '@/types';
 import { Users, Briefcase, FileText, MessageSquare, DollarSign, Image as ImageIcon } from 'lucide-react';
@@ -169,7 +166,7 @@ export default function AdminPage() {
         <div className="p-6 border-b border-gray-200">
           <h2 className="text-xl font-semibold text-gray-900 flex items-center space-x-2">
             <Briefcase size={20} />
-            <span>Available Projects</span>
+            <span>Available App</span>
           </h2>
         </div>
         

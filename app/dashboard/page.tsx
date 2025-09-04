@@ -119,7 +119,7 @@ export default function DashboardPage() {
               className="group relative inline-flex items-center justify-center px-6 py-3 overflow-hidden font-medium text-white bg-gradient-to-r from-emerald-500 to-teal-600 rounded-xl hover:shadow-lg hover:shadow-emerald-100 transition-all duration-300 hover:-translate-y-0.5"
             >
               <Plus size={20} className="mr-2 group-hover:rotate-90 transition-transform duration-300" />
-              <span className="font-medium">New Project</span>
+              <span className="font-medium">New App</span>
             </button>
           </div>
 
@@ -150,10 +150,10 @@ export default function DashboardPage() {
             <div className="p-6 border-b border-gray-100 flex justify-between items-center">
               <h2 className="text-xl font-semibold text-gray-800 flex items-center space-x-2">
                 <Briefcase size={20} className="text-emerald-600" />
-                <span>My Projects</span>
+                <span>My Apps</span>
               </h2>
               <div className="text-sm text-gray-500">
-                Showing <span className="font-medium text-gray-700">{userProjects.length}</span> {userProjects.length === 1 ? 'project' : 'projects'}
+                Showing <span className="font-medium text-gray-700">{userProjects.length}</span> {userProjects.length > 1 ? 'apps' : 'app'}
               </div>
             </div>
             <div className="p-6">
@@ -168,13 +168,13 @@ export default function DashboardPage() {
                   <div className="mx-auto w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mb-4">
                     <Briefcase className="h-8 w-8 text-emerald-600" />
                   </div>
-                  <h3 className="text-lg font-medium text-gray-800 mb-2">No projects yet</h3>
-                  <p className="text-gray-500 mb-6 max-w-md mx-auto">Get started by creating your first project.</p>
+                  <h3 className="text-lg font-medium text-gray-800 mb-2">No Apps yet</h3>
+                  <p className="text-gray-500 mb-6 max-w-md mx-auto">Get started by creating your first app</p>
                   <button
                     onClick={() => setIsProjectFormOpen(true)}
                     className="inline-flex items-center justify-center px-6 py-3 font-medium text-white bg-gradient-to-r from-emerald-500 to-teal-600 rounded-xl hover:shadow-lg transition-all duration-300 hover:-translate-y-0.5"
                   >
-                    <Plus size={20} className="mr-2" /> Create Project
+                    <Plus size={20} className="mr-2" /> Create App
                   </button>
                 </div>
               )}
