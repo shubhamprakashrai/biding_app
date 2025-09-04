@@ -235,7 +235,7 @@ export default function Navigation() {
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2 group">
             <div className="w-9 h-9 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center transform group-hover:rotate-6 transition-transform duration-300">
-              <span className="text-white font-bold text-sm">PM</span>
+              <span className="text-white font-bold text-sm">SCL</span>
             </div>
             <span className="text-xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
               {currentUser?.name?.split(' ')[0] || 'SourceCodeLelo'}

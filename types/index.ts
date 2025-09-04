@@ -17,6 +17,7 @@ export interface Project {
   createdAt: string;
   email: string;
   phone: string;
+  whatsapp: string;
   attachments?: string[];
   features?: string;  
   contactName: string;

@@ -2,12 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import ProjectCard from '@/components/ProjectCard';
-import ProposalForm from '@/components/ProposalForm';
-import Layout from '@/components/Layout';
-import ChatComponent from '@/components/ChatComponent';
 import { projects as initialProjects, proposals as initialProposals, messages as initialMessages } from '@/data/dummy';
 import { Project, Proposal, Message } from '@/types';
-import { Users, Briefcase, FileText, MessageSquare, DollarSign } from 'lucide-react';
+import { Users, Briefcase, FileText, DollarSign } from 'lucide-react';
 import { collection, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase/firebase';
 
@@ -156,7 +153,7 @@ export default function AdminPage() {
         <div className="p-6 border-b border-gray-200">
           <h2 className="text-xl font-semibold text-gray-900 flex items-center space-x-2">
             <Briefcase size={20} />
-            <span>Available Projects</span>
+            <span>Available App</span>
           </h2>
         </div>
         
