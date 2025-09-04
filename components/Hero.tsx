@@ -46,14 +46,14 @@ export default function Hero() {
               href="/register"
               className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-8 py-4 rounded-xl font-semibold hover:shadow-lg hover:shadow-emerald-100 transition-all duration-300 hover:-translate-y-0.5 flex items-center space-x-2"
             >
-              <span>Get Started</span>
+              <span>Get My First Project</span>
               <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform duration-200" />
             </Link>
             <Link 
               href="/login"
               className="border-2 border-gray-200 text-gray-700 px-8 py-4 rounded-xl font-semibold hover:border-emerald-500 hover:text-emerald-600 transition-all duration-300 hover:shadow-sm"
             >
-              Sign In
+              LogIn
             </Link>
           </div>
 
@@ -114,7 +114,7 @@ export default function Hero() {
             href="/register"
             className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-8 py-4 rounded-xl font-semibold hover:shadow-lg hover:shadow-emerald-100 transition-all duration-300 hover:-translate-y-0.5 inline-flex items-center space-x-2 group"
           >
-            <span>Start Your Project Today</span>
+            <span>Get Your Project</span>
             <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform duration-200" />
           </Link>
         </div>

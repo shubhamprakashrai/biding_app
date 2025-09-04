@@ -238,7 +238,7 @@ export default function Navigation() {
               <span className="text-white font-bold text-sm">PM</span>
             </div>
             <span className="text-xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
-              {currentUser?.name?.split(' ')[0] || 'ProjectManager'}
+              {currentUser?.name?.split(' ')[0] || 'SourceCodeLelo'}
             </span>
           </Link>
 
