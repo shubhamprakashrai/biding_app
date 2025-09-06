@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { doc, updateDoc, getDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, updateDoc, onSnapshot, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/app/firebase/firebase';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2 } from 'lucide-react';
@@ -50,13 +50,13 @@ export default function QrCodeSelector({ projectId, currentQrCode, onQrCodeSelec
     }
   };
 
-  // Fetch QR codes from Firestore
+  // Set up real-time listener for QR codes
   useEffect(() => {
-    const fetchQrCodes = async () => {
+    const docRef = doc(db, 'adminData', 'qrCodes');
+    
+    // Subscribe to document changes
+    const unsubscribe = onSnapshot(docRef, (docSnap) => {
       try {
-        const docRef = doc(db, 'adminData', 'qrCodes');
-        const docSnap = await getDoc(docRef);
-        
         if (docSnap.exists()) {
           const data = docSnap.data();
           if (data && Array.isArray(data.qrCodes)) {
@@ -72,13 +72,17 @@ export default function QrCodeSelector({ projectId, currentQrCode, onQrCodeSelec
           }
         }
       } catch (error) {
-        console.error('Error fetching QR codes:', error);
+        console.error('Error in QR codes listener:', error);
       } finally {
         setLoading(false);
       }
-    };
+    }, (error) => {
+      console.error('Error setting up QR codes listener:', error);
+      setLoading(false);
+    });
     
-    fetchQrCodes();
+    // Clean up the listener when component unmounts
+    return () => unsubscribe();
   }, [currentQrCode]);
 
   const handleQrCodeChange = async (value: string) => {
