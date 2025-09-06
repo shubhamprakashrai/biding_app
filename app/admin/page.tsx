@@ -8,6 +8,7 @@ import { Users, Briefcase, FileText, MessageSquare, DollarSign, Image as ImageIc
 import { collection, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase/firebase';
 import QrUpload from '@/components/QrUpload';
+import QrCodeDropdown from '@/components/QrCodeDropdown';
 
 export default function AdminPage() {
   const [projects, setProjects] = useState<Project[]>(initialProjects);
@@ -16,6 +17,7 @@ export default function AdminPage() {
   const [isProposalFormOpen, setIsProposalFormOpen] = useState(false);
   const [selectedProjectForProposal, setSelectedProjectForProposal] = useState<Project | null>(null);
   const [selectedProjectForChat, setSelectedProjectForChat] = useState<string | null>(null);
+  const [qrRefreshTrigger, setQrRefreshTrigger] = useState(0);
 
   // Mock current admin user
   const currentUser = {
@@ -143,18 +145,37 @@ export default function AdminPage() {
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">QR Code</p>
-              <p className="text-2xl font-bold text-indigo-600">Upload</p>
+        {/* QR Code Management */}
+        <div className="lg:col-span-2 space-y-6">
+          <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">QR Code Management</h3>
+                <p className="text-sm text-gray-500">Upload and manage your QR codes</p>
+              </div>
             </div>
-            <div className="p-2 rounded-full bg-indigo-100">
-              <ImageIcon className="text-indigo-600" size={20} />
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="font-medium text-gray-800">Upload New QR Code</h4>
+                  <div className="p-2 rounded-full bg-indigo-100">
+                    <ImageIcon className="text-indigo-600" size={16} />
+                  </div>
+                </div>
+                <QrUpload onUploadSuccess={() => setQrRefreshTrigger(prev => prev + 1)} />
+              </div>
+              
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="font-medium text-gray-800">Manage QR Codes</h4>
+                  <div className="p-2 rounded-full bg-green-100">
+                    <ImageIcon className="text-green-600" size={16} />
+                  </div>
+                </div>
+                <QrCodeDropdown key={qrRefreshTrigger} />
+              </div>
             </div>
-          </div>
-          <div className="mt-4">
-            <QrUpload />
           </div>
         </div>
       </div>
