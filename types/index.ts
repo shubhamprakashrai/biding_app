@@ -22,11 +22,10 @@ export interface Project {
   features?: string;  
   contactName: string;
   paymentQrCode?: string;
-  aliasName: '',
-  password: '',
-  appLink: '',        
-  playStoreLink: '' 
-  
+  aliasName?: string;
+  password?: string;
+  appLink?: string;
+  playStoreLink?: string;
   
 }
 

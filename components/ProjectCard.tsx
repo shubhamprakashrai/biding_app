@@ -462,6 +462,39 @@ export default function ProjectCard({
               </div>
             )}
 
+            {/* App Information */}
+            {(project.aliasName || project.password || project.appLink || project.playStoreLink) && (
+              <div className="mt-4 pt-4 border-t border-gray-200 space-y-2">
+                <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider">App Information</h4>
+                {project.aliasName && <div className="text-sm"><span className="font-medium">Alias:</span> {project.aliasName}</div>}
+                {project.password && (
+                  <div className="flex items-center text-sm">
+                    <span className="font-medium">Password:</span>
+                    <span className="ml-2 font-mono">••••••••</span>
+                    <button onClick={() => navigator.clipboard.writeText(project.password || '')} className="ml-2 text-blue-500">
+                      <Copy size={14} />
+                    </button>
+                  </div>
+                )}
+                {project.appLink && (
+                  <div className="text-sm">
+                    <span className="font-medium">App:</span>{' '}
+                    <a href={project.appLink} target="_blank" rel="noopener" className="text-blue-600 hover:underline">
+                      {project.appLink.substring(0, 30)}{project.appLink.length > 30 ? '...' : ''}
+                    </a>
+                  </div>
+                )}
+                {project.playStoreLink && (
+                  <div className="text-sm">
+                    <span className="font-medium">Play Store:</span>{' '}
+                    <a href={project.playStoreLink} target="_blank" rel="noopener" className="text-blue-600 hover:underline">
+                      {project.playStoreLink.substring(0, 30)}{project.playStoreLink.length > 30 ? '...' : ''}
+                    </a>
+                  </div>
+                )}
+              </div>
+            )}
+
           </div>
           {project.status === 'PAYMENT_PROCESSING' && !isAdmin && (
           <div className="flex items-center w-full px-5 pb-4">
