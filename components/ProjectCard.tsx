@@ -1,7 +1,7 @@
 import { Project } from '@/types';
 import { Calendar, DollarSign, Clock, MessageSquare, Edit2, ArrowRight, ChevronDown, Check, X, Download, CreditCard, Loader2, Copy, QrCode, CheckCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from './ui/button';
 import { PaymentQrUpload } from './PaymentQrUpload';
 import dynamic from 'next/dynamic';
@@ -168,9 +168,7 @@ export default function ProjectCard({
 }: ProjectCardProps) {
 
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
-  // const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
-
   const [isProcessing, setIsProcessing] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [selectedQrCode, setSelectedQrCode] = useState<string | null>(project.paymentQrCode || null);
@@ -364,26 +362,31 @@ export default function ProjectCard({
             )}
           </div>
           <div className="flex items-center">
-            <div className={cn(
-              statusConfig.className,
-              'inline-flex items-center',
-              isAdmin && 'cursor-pointer hover:bg-opacity-90 transition-all'
-            )}>
+            <div 
+              className={cn(
+                statusConfig.className,
+                'inline-flex items-center',
+                isAdmin && 'cursor-pointer hover:bg-opacity-90 transition-all'
+              )}
+              onClick={(e) => {
+                if (!isAdmin) return;
+                e.stopPropagation();
+                setOpenDropdownId(openDropdownId === project.id ? null : project.id);
+              }}
+            >
               {statusConfig.icon}
-              {String(project?.status || 'PENDING').replace(/_/g, ' ')}
-              {isAdmin && (
-                <>
-                  <ChevronDown 
-                    size={14} 
-                    className="ml-1" 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setOpenDropdownId(openDropdownId === project.id ? null : project.id);
-                    }}
-                  />
-                  {openDropdownId === project.id && (<div className="absolute right-0 mt-1 w-40 bg-white rounded-md shadow-lg z-10 border border-gray-200">
-                      <div className="py-1">
-                      {statusOptions.map((option) => (
+              <span className="flex items-center">
+                {String(project?.status || 'PENDING').replace(/_/g, ' ')}
+                {isAdmin && <ChevronDown size={14} className="ml-1" />}
+              </span>
+              {openDropdownId === project.id && (
+                <div 
+                  ref={dropdownRef}
+                  className="absolute right-0 mt-1 w-40 bg-white rounded-md shadow-lg z-10 border border-gray-200"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="py-1">
+                    {statusOptions.map((option) => (
                       <button
                         key={option.value}
                         type="button"
@@ -400,12 +403,9 @@ export default function ProjectCard({
                         {option.label}
                         {project.status === option.value && <Check size={16} />}
                       </button>
-                      ))}
-
-                      </div>
-                    </div>
-                  )}
-                </>
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
           </div>
