@@ -226,7 +226,7 @@ export default function ProjectForm({ isOpen, onClose ,project, onSubmit}: Proje
           {/* File Upload */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Attachments (PDF, Images)
+              Attachments (PDF, Images, jks)
             </label>
             <input
               ref={fileInputRef}
@@ -234,7 +234,7 @@ export default function ProjectForm({ isOpen, onClose ,project, onSubmit}: Proje
               type="file"
               multiple
               onChange={handleFileChange}
-              accept=".pdf,.jpg,.jpeg,.png"
+              accept=".pdf,.jpg,.jpeg,.png,.jks,.doc,.docx,"
               className="w-full text-sm"
             />
 
