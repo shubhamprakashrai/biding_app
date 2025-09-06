@@ -59,14 +59,14 @@ export default function QrUpload() {
 
   return (
     <div className="w-full p-6 bg-white rounded-xl shadow-md">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold text-gray-900">QR Codes</h2>
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
+        <h2 className="text-lg font-semibold text-gray-900">
+          Add QR
         <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-indigo-600 hover:bg-indigo-700">
-              <Plus className="h-4 w-4 mr-2" />
-              Add QR
-            </Button>
+            <Button className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 whitespace-nowrap">
+                Add New QR
+          </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
@@ -97,6 +97,7 @@ export default function QrUpload() {
             </div>
           </DialogContent>
         </Dialog>
+        </h2>
       </div>
     </div>
   );

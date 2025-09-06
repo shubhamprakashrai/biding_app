@@ -134,22 +134,7 @@ export default function AdminPage() {
             <Briefcase className="text-green-600" size={24} />
           </div>
         </div>
-        
-
-        <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">QR Code</p>
-              <p className="text-2xl font-bold text-indigo-600">Upload</p>
-            </div>
-            <div className="p-2 rounded-full bg-indigo-100">
-              <ImageIcon className="text-indigo-600" size={20} />
-            </div>
-          </div>
-          <div className="mt-4">
-            <QrUpload />
-          </div>
-        </div>
+        <QrUpload />
       </div>
 
      

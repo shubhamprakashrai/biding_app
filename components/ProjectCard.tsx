@@ -8,6 +8,9 @@ import dynamic from 'next/dynamic';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/app/firebase/firebase';
 import PaymentDialog from './PaymentDialog';
+import ApkUpload from './ApkUpload';
+import { deleteObject, ref as storageRef } from 'firebase/storage';
+import { storage } from '@/app/firebase/firebase';
 
 // Dynamically import QrCodeSelector to avoid SSR issues with Firestore
 const QrCodeSelector = dynamic(() => import('./QrCodeSelector'), {
@@ -171,6 +174,8 @@ export default function ProjectCard({
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [showApkUpload, setShowApkUpload] = useState(false);
+  const [apkFileUrl, setApkFileUrl] = useState(project.apkFileUrl || '');
   const [selectedQrCode, setSelectedQrCode] = useState<string | null>(project.paymentQrCode || null);
   const [showQrError, setShowQrError] = useState(false);
   const [showPaymentDetails, setShowPaymentDetails] = useState(false);
@@ -247,31 +252,36 @@ export default function ProjectCard({
           const projectRef = doc(db, 'projects', project.id);
           await updateDoc(projectRef, {
             status: 'PAYMENT_PROCESSING',
-            updatedAt: serverTimestamp()
           });
-          onStatusChange?.(project.id, 'PAYMENT_PROCESSING');
-          return;
         } catch (error) {
           console.error('Error updating project status:', error);
           return;
         }
       }
     }
-    
-    // For other status changes
+
+    setIsProcessing(true);
     try {
       const projectRef = doc(db, 'projects', project.id);
       await updateDoc(projectRef, {
         status: newStatus,
+        ...(newStatus === 'PAYMENT_PROCESSING' && { 
+          paymentQrCode: selectedQrCode,
+          apkFileUrl: apkFileUrl
+        }),
         updatedAt: serverTimestamp()
       });
-      onStatusChange?.(project.id, newStatus);
-      setShowQrError(false);
+
+      if (onStatusChange) {
+        onStatusChange(project.id, newStatus);
+      }
+      setShowApkUpload(false);
     } catch (error) {
       console.error('Error updating project status:', error);
+    } finally {
+      setIsProcessing(false);
     }
   };
-  
 
   const getStatusConfig = (status: Project['status']) => {
     const baseStyles = 'px-2.5 py-1 rounded-full text-xs font-medium inline-flex items-center';
@@ -347,16 +357,52 @@ export default function ProjectCard({
             </h3>
             {/* QR Code Selector for Payment Processing */}
             {(project.status === 'PAYMENT_PROCESSING' || showQrError) && isAdmin && (
-              <div className="mt-2">
-                <QrCodeSelector 
-                  projectId={project.id}
-                  currentQrCode={selectedQrCode || project.paymentQrCode}
-                  onQrCodeSelect={setSelectedQrCode}
-                />
-                {showQrError && !selectedQrCode && (
-                  <p className="mt-1 text-sm text-red-600">
-                    Please select a QR code before setting status to Payment Processing
-                  </p>
+              <div className="space-y-4">
+                <div>
+                  <QrCodeSelector 
+                    projectId={project.id}
+                    currentQrCode={selectedQrCode || project.paymentQrCode}
+                    onQrCodeSelect={setSelectedQrCode}
+                  />
+                  {showQrError && !selectedQrCode && (
+                    <p className="mt-1 text-sm text-red-600">
+                      Please select a QR code before setting status to Payment Processing
+                    </p>
+                  )}
+                </div>
+
+                {(showApkUpload || project.status === 'PAYMENT_PROCESSING') && (
+                  <div>
+                    <p className="text-sm font-medium text-gray-700 mb-1">APK File</p>
+                    <ApkUpload 
+                      projectId={project.id}
+                      currentApkUrl={apkFileUrl}
+                      onUploadSuccess={(url) => setApkFileUrl(url)}
+                      onDelete={async () => {
+                        try {
+                          if (apkFileUrl) {
+                            // Delete the file from storage
+                            const fileRef = storageRef(storage, apkFileUrl);
+                            await deleteObject(fileRef);
+                          }
+                          setApkFileUrl('');
+                        } catch (error) {
+                          console.error('Error deleting APK file:', error);
+                        }
+                      }}
+                    />
+                    {showApkUpload && apkFileUrl && (
+                      <div className="mt-2">
+                        <Button 
+                          size="sm" 
+                          onClick={() => handleStatusChange('PAYMENT_PROCESSING')}
+                          disabled={isProcessing}
+                        >
+                          {isProcessing ? 'Updating...' : 'Confirm Status Update'}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             )}

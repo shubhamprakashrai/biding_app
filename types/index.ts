@@ -22,7 +22,7 @@ export interface Project {
   features?: string;  
   contactName: string;
   paymentQrCode?: string;
-  
+  apkFileUrl?: string;
   
 }
 
