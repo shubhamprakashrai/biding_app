@@ -57,9 +57,6 @@ export default function DashboardPage() {
     return () => unsubscribe();
   }, []);
 
-  const handleCreateProject = (newProject: Project) => {
-    setProjects(prev => [newProject, ...prev]);
-  };
   const handleEditProject = (project: Project) => {
     setEditingProject(project);
     setIsProjectFormOpen(true);
@@ -160,7 +157,13 @@ export default function DashboardPage() {
               {userProjects.length > 0 ? (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                   {userProjects.map(project => (
-                    <ProjectCard key={project.id} project={project} showActions  onEdit={handleEditProject} onViewMessages={handleViewMessages} />
+                    <ProjectCard 
+                    key={project.id} 
+                    project={project} 
+                    showActions 
+                    onEdit={handleEditProject} 
+                    onViewMessages={handleViewMessages} 
+                    />
                   ))}
                 </div>
               ) : (
@@ -185,8 +188,8 @@ export default function DashboardPage() {
 
       {/* Modals */}
       <ProjectForm
-  isOpen={isProjectFormOpen}
-  onClose={() => {
+     isOpen={isProjectFormOpen}
+     onClose={() => {
     setIsProjectFormOpen(false);
     setEditingProject(null);
   }}
@@ -205,17 +208,6 @@ export default function DashboardPage() {
   }}
 />
 
-      {selectedProjectForChat && selectedProject && (
-        <ChatComponent
-          projectId={selectedProjectForChat}
-          projectTitle={selectedProject.title}
-          messages={messages}
-          currentUserId={currentUser.id}
-          currentUserRole={currentUser.role}
-          onClose={() => setSelectedProjectForChat(null)}
-          onSendMessage={handleSendMessage}
-        />
-      )}
     </div>
   );
 }
