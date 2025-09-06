@@ -87,9 +87,10 @@ export default function AdminPage() {
 
   const stats = {
     totalProjects: projects.length,
+    activeProjects: projects.filter(p => p.status === 'IN_PROGRESS').length,
     activeProposals: proposals.filter(p => p.status === 'PENDING').length,
     acceptedProposals: proposals.filter(p => p.status === 'ACCEPTED').length,
-    totalRevenue: proposals.filter(p => p.status === 'ACCEPTED').reduce((sum, p) => sum + p.proposedBudget, 0)
+    totalRevenue: proposals.filter(p => p.status === 'ACCEPTED').reduce((sum, p) => sum + (p.proposedBudget || 0), 0)
   };
 
   return (<div className="min-h-screen bg-gray-50">
@@ -102,7 +103,7 @@ export default function AdminPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
         <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
@@ -116,7 +117,17 @@ export default function AdminPage() {
         <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Active Proposals</p>
+              <p className="text-sm font-medium text-gray-600">Active Projects</p>
+              <p className="text-2xl font-bold text-green-600">{stats.activeProjects}</p>
+            </div>
+            <Briefcase className="text-green-600" size={24} />
+          </div>
+        </div>
+        
+        <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Pending Proposals</p>
               <p className="text-2xl font-bold text-yellow-600">{stats.activeProposals}</p>
             </div>
             <FileText className="text-yellow-600" size={24} />

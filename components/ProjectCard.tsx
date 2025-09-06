@@ -646,7 +646,7 @@ export default function ProjectCard({
                           required
                         />
                         <span className="ml-2 text-sm text-gray-700">
-                          I confirm that I have made the payment of ${project.budget.toLocaleString()} for "{project.title}"
+                          I confirm that I have made the payment of ${project.budget.toLocaleString()} for {project.title}
                         </span>
                       </label>
                     </div>
@@ -682,7 +682,7 @@ export default function ProjectCard({
                 <div className="text-center">
                   <CheckCircle className="h-12 w-12 text-emerald-500 mx-auto mb-4" />
                   <p className="text-sm text-gray-600 mb-6">
-                    Your payment confirmation has been received. We'll verify and update the project status shortly.
+                    Your payment confirmation has been received. We&apos;ll verify and update the project status shortly.
                   </p>
                   <Button 
                     onClick={() => {
