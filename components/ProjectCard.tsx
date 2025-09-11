@@ -8,6 +8,7 @@ import dynamic from 'next/dynamic';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/app/firebase/firebase';
 import PaymentDialog from './PaymentDialog';
+import PaymentHistoryDialog from './PaymentHistoryDialog';
 
 // Dynamically import QrCodeSelector to avoid SSR issues with Firestore
 const QrCodeSelector = dynamic(() => import('./QrCodeSelector'), {
@@ -153,6 +154,7 @@ const statusOptions: { value: Project['status']; label: string }[] = [
   { value: 'IN_PROGRESS', label: 'In Progress' },
   { value: 'PAYMENT_PROCESSING', label: 'Payment Processing' },
   { value: 'PAYMENT_COMPLETED', label: 'Payment Completed' },
+  { value: 'PAYMENT_UNDER_REVIEW', label: 'Payment Under Review' },
   { value: 'COMPLETED', label: 'Completed' },
   { value: 'CANCELLED', label: 'Cancelled' }
 ];
@@ -178,6 +180,7 @@ export default function ProjectCard({
   const [showPaymentDetails, setShowPaymentDetails] = useState(false);
   const [showQrCodeSelector, setShowQrCodeSelector] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
 
 
   const [open, setOpen] = useState(false);
@@ -416,6 +419,60 @@ export default function ProjectCard({
           {project.description}
         </p>
 
+
+        {/* Payment Details Button */}
+        <div className="mt-4 space-y-2">
+          {project.paymentProof && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={() => window.open(project.paymentProof, '_blank')}
+            >
+              <Download className="w-4 h-4 mr-2" />
+              View Payment Proof
+            </Button>
+          )}
+          
+          {project.transactionId && (
+            <div className="text-sm p-3 bg-gray-50 rounded-md">
+              <p className="font-medium">Transaction ID:</p>
+              <div className="flex items-center gap-2 mt-1">
+                <code className="text-xs bg-gray-100 p-1 rounded">{project.transactionId}</code>
+                <button 
+                  onClick={() => {
+                    navigator.clipboard.writeText(project.transactionId || '');
+                    // You might want to add a toast notification here
+                  }}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {project.payments && project.payments.length > 0 ? (
+            <div className="mt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={() => setShowPaymentDialog(true)}
+              >
+                <Clock className="w-4 h-4 mr-2" />
+                View Payment History
+              </Button>
+              
+              <PaymentHistoryDialog
+                open={showPaymentDialog}
+                onClose={() => setShowPaymentDialog(false)}
+                payments={project.payments}
+              />
+            </div>
+          ) : null}
+        </div>
+
         {/* Project metadata */}
         <div className="mt-auto space-y-3">
           <div className="flex items-center justify-between text-sm">
@@ -507,6 +564,7 @@ export default function ProjectCard({
           )}
           {selectedProject && (
             <PaymentDialog
+            projectId={selectedProject.id}
               open={open}
               onClose={setOpen}
               qrId={selectedProject.paymentQrCode || ""}
@@ -550,18 +608,15 @@ export default function ProjectCard({
       )}
 
       {/* Image Viewer Modal */}
-      {selectedImageIndex !== null && project.attachments && (
+      {selectedImageIndex !== null && project.attachments && (project.attachments && (
         <ImageViewer
           images={project.attachments}
           initialIndex={selectedImageIndex}
           onClose={closeImageViewer}
           projectTitle={project.title}
         />
-      )}
-
-
-    
-
+      ))}
+      
       {/* QR Code Selector Modal */}
       {showQrCodeSelector && (
         <div 
