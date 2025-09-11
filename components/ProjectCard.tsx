@@ -689,12 +689,12 @@ export default function ProjectCard({
       )}
 
       {/* Show uploaded deliverables for users and admin */}
-{project.deliverables && project.deliverables.length >= 0 && (
+    {project.deliverables && project.deliverables.length >= 0 && (
   <DeliverablesViewer
     deliverables={project.deliverables}
     isAdmin={isAdmin}
   />
-)}
+   )}
 
       {/* Payment Modal */}
       {showPaymentDetails && (

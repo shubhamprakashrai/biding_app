@@ -58,7 +58,7 @@ export default function Hero() {
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 ">
             <div className="text-center bg-white/80 p-6 rounded-xl border border-gray-100 hover:shadow-md transition-shadow duration-300">
               <div className="text-3xl font-bold text-emerald-600 mb-2">500+</div>
               <div className="text-gray-600">Projects Completed</div>
@@ -74,6 +74,39 @@ export default function Hero() {
           </div>
         </div>
       </div>
+      
+      {/* How-to Video Section */}
+      <div className="bg-white py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold text-gray-900 mb-3">See Our Platform in Action</h2>
+            <div className="w-20 h-1 bg-emerald-500 mx-auto mb-6"></div>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              Learn how to submit projects, connect with professionals, and manage your workflow in minutes.
+            </p>
+          </div>
+
+          <div className="relative w-full max-w-5xl mx-auto aspect-video rounded-xl overflow-hidden shadow-xl">
+            <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+              <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-lg transform transition-transform hover:scale-110">
+                <svg className="w-10 h-10 text-emerald-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M6.3 2.841A1.5 1.5 0 004 4.11v11.78a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
+                </svg>
+              </div>
+            </div>
+            <iframe
+              className="w-full h-full relative z-10"
+              src="https://www.youtube.com/embed/H5_uZMWdXlI?autoplay=0&rel=0"
+              title="How to Use Our Platform"
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            ></iframe>
+          </div>
+        </div>
+      </div>
+
+
 
       {/* Features Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
@@ -83,6 +116,7 @@ export default function Hero() {
             We provide everything you need to successfully manage and complete your projects
           </p>
         </div>
+
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {features.map((feature, index) => {
