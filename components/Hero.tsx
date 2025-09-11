@@ -4,8 +4,24 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowRight, CheckCircle, Users, Clock, Award } from 'lucide-react';
 import { getAuth } from 'firebase/auth';
+import { useHomePageData } from '@/hooks/useHomePageData';
+import { useEffect, useState } from 'react';
 
 export default function Hero() {
+  const router = useRouter();
+  const auth = getAuth();
+  const [homePageData, loading] = useHomePageData();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  if (loading && !homePageData) {
+    return <div className="h-screen flex items-center justify-center">Loading...</div>;
+  }
+
+  const showVideo = isClient && homePageData?.videoUrl && homePageData.isActive !== false;
   const features = [
     {
       icon: CheckCircle,
@@ -28,9 +44,6 @@ export default function Hero() {
       description: 'All work is reviewed and meets high standards'
     }
   ];
-
-  const router = useRouter();
-  const auth = getAuth();
 
   const handleGetStarted = () => {
     const user = auth.currentUser;
@@ -107,23 +120,25 @@ export default function Hero() {
             </p>
           </div>
 
-          <div className="relative w-full max-w-5xl mx-auto aspect-video rounded-xl overflow-hidden shadow-xl">
-            <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
-              <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-lg transform transition-transform hover:scale-110">
-                <svg className="w-10 h-10 text-emerald-600" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M6.3 2.841A1.5 1.5 0 004 4.11v11.78a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
-                </svg>
+          {showVideo && (
+            <div className="relative w-full max-w-5xl mx-auto aspect-video rounded-xl overflow-hidden shadow-xl">
+              <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+                <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-lg transform transition-transform hover:scale-110">
+                  <svg className="w-10 h-10 text-emerald-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M6.3 2.841A1.5 1.5 0 004 4.11v11.78a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
+                  </svg>
+                </div>
               </div>
+              <iframe
+                className="w-full h-full relative z-10"
+                src={homePageData.videoUrl}
+                title="How to Use Our Platform"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              ></iframe>
             </div>
-            <iframe
-              className="w-full h-full relative z-10"
-              src="https://www.youtube.com/embed/H5_uZMWdXlI?autoplay=0&rel=0"
-              title="How to Use Our Platform"
-              frameBorder="0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-            ></iframe>
-          </div>
+          )}
         </div>
       </div>
 
