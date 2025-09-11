@@ -4,10 +4,11 @@ import { useEffect, useState } from 'react';
 import ProjectCard from '@/components/ProjectCard';
 import { projects as initialProjects, proposals as initialProposals, messages as initialMessages } from '@/data/dummy';
 import { Project, Proposal, Message } from '@/types';
-import { Users, Briefcase, FileText, MessageSquare, DollarSign, Image as ImageIcon, Clock } from 'lucide-react';
+import { Users, Briefcase, FileText, MessageSquare, DollarSign, Image as ImageIcon } from 'lucide-react';
 import { collection, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase/firebase';
 import QrUpload from '@/components/QrUpload';
+import QrCodeDropdown from '@/components/QrCodeDropdown';
 
 export default function AdminPage() {
   const [projects, setProjects] = useState<Project[]>(initialProjects);
@@ -16,6 +17,7 @@ export default function AdminPage() {
   const [isProposalFormOpen, setIsProposalFormOpen] = useState(false);
   const [selectedProjectForProposal, setSelectedProjectForProposal] = useState<Project | null>(null);
   const [selectedProjectForChat, setSelectedProjectForChat] = useState<string | null>(null);
+  const [qrRefreshTrigger, setQrRefreshTrigger] = useState(0);
 
   // Mock current admin user
   const currentUser = {
@@ -87,11 +89,9 @@ export default function AdminPage() {
 
   const stats = {
     totalProjects: projects.length,
-    pendingProjects: projects.filter(p => p.status === 'PENDING').length,
-    activeProjects: projects.filter(p => p.status === 'IN_PROGRESS').length,
     activeProposals: proposals.filter(p => p.status === 'PENDING').length,
     acceptedProposals: proposals.filter(p => p.status === 'ACCEPTED').length,
-    totalRevenue: proposals.filter(p => p.status === 'ACCEPTED').reduce((sum, p) => sum + (p.proposedBudget || 0), 0)
+    totalRevenue: proposals.filter(p => p.status === 'ACCEPTED').reduce((sum, p) => sum + p.proposedBudget, 0)
   };
 
   return (<div className="min-h-screen bg-gray-50">
@@ -104,7 +104,7 @@ export default function AdminPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
@@ -118,23 +118,66 @@ export default function AdminPage() {
         <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Pending Projects</p>
-              <p className="text-2xl font-bold text-yellow-600">{stats.pendingProjects}</p>
+              <p className="text-sm font-medium text-gray-600">Active Proposals</p>
+              <p className="text-2xl font-bold text-yellow-600">{stats.activeProposals}</p>
             </div>
-            <Clock className="text-yellow-600" size={24} />
+            <FileText className="text-yellow-600" size={24} />
           </div>
         </div>
         
         <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Active Projects</p>
-              <p className="text-2xl font-bold text-green-600">{stats.activeProjects}</p>
+              <p className="text-sm font-medium text-gray-600">Accepted</p>
+              <p className="text-2xl font-bold text-green-600">{stats.acceptedProposals}</p>
             </div>
-            <Briefcase className="text-green-600" size={24} />
+            <Users className="text-green-600" size={24} />
           </div>
         </div>
-        <QrUpload />
+        
+        <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Revenue</p>
+              <p className="text-2xl font-bold text-purple-600">${stats.totalRevenue.toLocaleString()}</p>
+            </div>
+            <DollarSign className="text-purple-600" size={24} />
+          </div>
+        </div>
+
+        {/* QR Code Management */}
+        <div className="lg:col-span-2 space-y-6">
+          <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">QR Code Management</h3>
+                <p className="text-sm text-gray-500">Upload and manage your QR codes</p>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="font-medium text-gray-800">Upload New QR Code</h4>
+                  <div className="p-2 rounded-full bg-indigo-100">
+                    <ImageIcon className="text-indigo-600" size={16} />
+                  </div>
+                </div>
+                <QrUpload onUploadSuccess={() => setQrRefreshTrigger(prev => prev + 1)} />
+              </div>
+              
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="font-medium text-gray-800">Manage QR Codes</h4>
+                  <div className="p-2 rounded-full bg-green-100">
+                    <ImageIcon className="text-green-600" size={16} />
+                  </div>
+                </div>
+                <QrCodeDropdown key={qrRefreshTrigger} />
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
      

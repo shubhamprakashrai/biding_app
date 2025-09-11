@@ -1,16 +1,15 @@
 import { Project } from '@/types';
 import { Calendar, DollarSign, Clock, MessageSquare, Edit2, ArrowRight, ChevronDown, Check, X, Download, CreditCard, Loader2, Copy, QrCode, CheckCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from './ui/button';
-import { PaymentQrUpload } from './PaymentQrUpload';
 import dynamic from 'next/dynamic';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/app/firebase/firebase';
 import PaymentDialog from './PaymentDialog';
-import ApkUpload from './ApkUpload';
-import { deleteObject, ref as storageRef } from 'firebase/storage';
-import { storage } from '@/app/firebase/firebase';
+import PaymentHistoryDialog from './PaymentHistoryDialog';
+import DeliverablesUploadModal from './DeliverablesUpload';
+import DeliverablesViewer from './DeliverablesViewer';
 
 // Dynamically import QrCodeSelector to avoid SSR issues with Firestore
 const QrCodeSelector = dynamic(() => import('./QrCodeSelector'), {
@@ -82,6 +81,10 @@ const ImageViewer = ({ images, initialIndex, onClose, projectTitle }: ImageViewe
   };
 
   if (!images.length) return null;
+
+
+
+  
 
   return (
     <div 
@@ -156,6 +159,7 @@ const statusOptions: { value: Project['status']; label: string }[] = [
   { value: 'IN_PROGRESS', label: 'In Progress' },
   { value: 'PAYMENT_PROCESSING', label: 'Payment Processing' },
   { value: 'PAYMENT_COMPLETED', label: 'Payment Completed' },
+  { value: 'PAYMENT_UNDER_REVIEW', label: 'Payment Under Review' },
   { value: 'COMPLETED', label: 'Completed' },
   { value: 'CANCELLED', label: 'Cancelled' }
 ];
@@ -171,28 +175,34 @@ export default function ProjectCard({
 }: ProjectCardProps) {
 
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
+  // const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+
   const [isProcessing, setIsProcessing] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-  const [showApkUpload, setShowApkUpload] = useState(false);
-  const [apkFileUrl, setApkFileUrl] = useState(project.apkFileUrl || '');
   const [selectedQrCode, setSelectedQrCode] = useState<string | null>(project.paymentQrCode || null);
   const [showQrError, setShowQrError] = useState(false);
   const [showPaymentDetails, setShowPaymentDetails] = useState(false);
   const [showQrCodeSelector, setShowQrCodeSelector] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
-
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const [showDeliverableModal, setShowDeliverableModal] = useState(false);
 
   const [open, setOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
 
-  const handlePaymentClick = (proj: Project) => {
-  setSelectedProject(proj);
-  setOpen(true);
-};
-  
+  const canUploadDeliverables =
+  project.transactionId &&
+  (project.status === "PAYMENT_COMPLETED" || 
+   project.status === "PAYMENT_PROCESSING" ||
+   project.status === "PAYMENT_UNDER_REVIEW");
 
-  
+
+  const handlePaymentClick = (proj: Project) => {
+    setSelectedProject(proj);
+    setOpen(true);
+  };
+
   // Update selected QR code when project prop changes
   useEffect(() => {
     if (project.paymentQrCode) {
@@ -252,36 +262,31 @@ export default function ProjectCard({
           const projectRef = doc(db, 'projects', project.id);
           await updateDoc(projectRef, {
             status: 'PAYMENT_PROCESSING',
+            updatedAt: serverTimestamp()
           });
+          onStatusChange?.(project.id, 'PAYMENT_PROCESSING');
+          return;
         } catch (error) {
           console.error('Error updating project status:', error);
           return;
         }
       }
     }
-
-    setIsProcessing(true);
+    
+    // For other status changes
     try {
       const projectRef = doc(db, 'projects', project.id);
       await updateDoc(projectRef, {
         status: newStatus,
-        ...(newStatus === 'PAYMENT_PROCESSING' && { 
-          paymentQrCode: selectedQrCode,
-          apkFileUrl: apkFileUrl
-        }),
         updatedAt: serverTimestamp()
       });
-
-      if (onStatusChange) {
-        onStatusChange(project.id, newStatus);
-      }
-      setShowApkUpload(false);
+      onStatusChange?.(project.id, newStatus);
+      setShowQrError(false);
     } catch (error) {
       console.error('Error updating project status:', error);
-    } finally {
-      setIsProcessing(false);
     }
   };
+  
 
   const getStatusConfig = (status: Project['status']) => {
     const baseStyles = 'px-2.5 py-1 rounded-full text-xs font-medium inline-flex items-center';
@@ -343,6 +348,8 @@ export default function ProjectCard({
     document.body.style.overflow = 'auto';
   };
 
+ 
+
   return (
     <div className={cn(
       'group bg-white rounded-xl border border-gray-100 hover:shadow-md transition-all duration-300 overflow-hidden h-full flex flex-col',
@@ -357,82 +364,41 @@ export default function ProjectCard({
             </h3>
             {/* QR Code Selector for Payment Processing */}
             {(project.status === 'PAYMENT_PROCESSING' || showQrError) && isAdmin && (
-              <div className="space-y-4">
-                <div>
-                  <QrCodeSelector 
-                    projectId={project.id}
-                    currentQrCode={selectedQrCode || project.paymentQrCode}
-                    onQrCodeSelect={setSelectedQrCode}
-                  />
-                  {showQrError && !selectedQrCode && (
-                    <p className="mt-1 text-sm text-red-600">
-                      Please select a QR code before setting status to Payment Processing
-                    </p>
-                  )}
-                </div>
-
-                {(showApkUpload || project.status === 'PAYMENT_PROCESSING') && (
-                  <div>
-                    <p className="text-sm font-medium text-gray-700 mb-1">APK File</p>
-                    <ApkUpload 
-                      projectId={project.id}
-                      currentApkUrl={apkFileUrl}
-                      onUploadSuccess={(url) => setApkFileUrl(url)}
-                      onDelete={async () => {
-                        try {
-                          if (apkFileUrl) {
-                            // Delete the file from storage
-                            const fileRef = storageRef(storage, apkFileUrl);
-                            await deleteObject(fileRef);
-                          }
-                          setApkFileUrl('');
-                        } catch (error) {
-                          console.error('Error deleting APK file:', error);
-                        }
-                      }}
-                    />
-                    {showApkUpload && apkFileUrl && (
-                      <div className="mt-2">
-                        <Button 
-                          size="sm" 
-                          onClick={() => handleStatusChange('PAYMENT_PROCESSING')}
-                          disabled={isProcessing}
-                        >
-                          {isProcessing ? 'Updating...' : 'Confirm Status Update'}
-                        </Button>
-                      </div>
-                    )}
-                  </div>
+              <div className="mt-2">
+                <QrCodeSelector 
+                  projectId={project.id}
+                  currentQrCode={selectedQrCode || project.paymentQrCode}
+                  onQrCodeSelect={setSelectedQrCode}
+                />
+                {showQrError && !selectedQrCode && (
+                  <p className="mt-1 text-sm text-red-600">
+                    Please select a QR code before setting status to Payment Processing
+                  </p>
                 )}
               </div>
             )}
           </div>
           <div className="flex items-center">
-            <div 
-              className={cn(
-                statusConfig.className,
-                'inline-flex items-center',
-                isAdmin && 'cursor-pointer hover:bg-opacity-90 transition-all'
-              )}
-              onClick={(e) => {
-                if (!isAdmin) return;
-                e.stopPropagation();
-                setOpenDropdownId(openDropdownId === project.id ? null : project.id);
-              }}
-            >
+            <div className={cn(
+              statusConfig.className,
+              'inline-flex items-center',
+              isAdmin && 'cursor-pointer hover:bg-opacity-90 transition-all'
+            )}>
               {statusConfig.icon}
-              <span className="flex items-center">
-                {String(project?.status || 'PENDING').replace(/_/g, ' ')}
-                {isAdmin && <ChevronDown size={14} className="ml-1" />}
-              </span>
-              {openDropdownId === project.id && (
-                <div 
-                  ref={dropdownRef}
-                  className="absolute right-0 mt-1 w-40 bg-white rounded-md shadow-lg z-10 border border-gray-200"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <div className="py-1">
-                    {statusOptions.map((option) => (
+              {String(project?.status || 'PENDING').replace(/_/g, ' ')}
+              {isAdmin && (
+                <>
+                  <ChevronDown 
+                    size={14} 
+                    className="ml-1" 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setOpenDropdownId(openDropdownId === project.id ? null : project.id);
+                    }}
+                  />
+                  {openDropdownId === project.id && (<div className="absolute right-0 mt-1 w-40 bg-white rounded-md shadow-lg z-10 border border-gray-200">
+                      <div className="py-1">
+                      {statusOptions.map((option) => (
                       <button
                         key={option.value}
                         type="button"
@@ -449,9 +415,12 @@ export default function ProjectCard({
                         {option.label}
                         {project.status === option.value && <Check size={16} />}
                       </button>
-                    ))}
-                  </div>
-                </div>
+                      ))}
+
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>
@@ -462,6 +431,77 @@ export default function ProjectCard({
           {project.description}
         </p>
 
+
+        {/* Deliverables Upload */}
+
+        {canUploadDeliverables && isAdmin && (
+  <div className="mt-4">
+    <Button onClick={() => setShowDeliverableModal(true)} className="w-full">
+      Upload Deliverables
+    </Button>
+
+    <DeliverablesUploadModal
+    projectId={project.id}
+      open={showDeliverableModal}
+      onClose={() => setShowDeliverableModal(false)}
+    />
+  </div>
+)}
+
+        {/* Payment Details Button */}
+        <div className="mt-4 space-y-2">
+          {project.paymentProof && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={() => window.open(project.paymentProof, '_blank')}
+            >
+              <Download className="w-4 h-4 mr-2" />
+              View Payment Proof
+            </Button>
+          )}
+          
+          {project.transactionId && (
+            <div className="text-sm p-3 bg-gray-50 rounded-md">
+              <p className="font-medium">Transaction ID:</p>
+              <div className="flex items-center gap-2 mt-1">
+                <code className="text-xs bg-gray-100 p-1 rounded">{project.transactionId}</code>
+                <button 
+                  onClick={() => {
+                    navigator.clipboard.writeText(project.transactionId || '');
+                    // You might want to add a toast notification here
+                  }}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {project.payments && project.payments.length > 0 ? (
+            <div className="mt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={() => setShowPaymentDialog(true)}
+              >
+                <Clock className="w-4 h-4 mr-2" />
+                View Payment History
+              </Button>
+              
+              <PaymentHistoryDialog
+                open={showPaymentDialog}
+                onClose={() => setShowPaymentDialog(false)}
+                payments={project.payments}
+              />
+            </div>
+          ) : null}
+        </div>
+        
+        
         {/* Project metadata */}
         <div className="mt-auto space-y-3">
           <div className="flex items-center justify-between text-sm">
@@ -508,6 +548,39 @@ export default function ProjectCard({
               </div>
             )}
 
+            {/* App Information */}
+            {(project.aliasName || project.password || project.appLink || project.playStoreLink) && (
+              <div className="mt-4 pt-4 border-t border-gray-200 space-y-2">
+                <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider">App Information</h4>
+                {project.aliasName && <div className="text-sm"><span className="font-medium">Alias:</span> {project.aliasName}</div>}
+                {project.password && (
+                  <div className="flex items-center text-sm">
+                    <span className="font-medium">Password:</span>
+                    <span className="ml-2 font-mono">••••••••</span>
+                    <button onClick={() => navigator.clipboard.writeText(project.password || '')} className="ml-2 text-blue-500">
+                      <Copy size={14} />
+                    </button>
+                  </div>
+                )}
+                {project.appLink && (
+                  <div className="text-sm">
+                    <span className="font-medium">App:</span>{' '}
+                    <a href={project.appLink} target="_blank" rel="noopener" className="text-blue-600 hover:underline">
+                      {project.appLink.substring(0, 30)}{project.appLink.length > 30 ? '...' : ''}
+                    </a>
+                  </div>
+                )}
+                {project.playStoreLink && (
+                  <div className="text-sm">
+                    <span className="font-medium">Play Store:</span>{' '}
+                    <a href={project.playStoreLink} target="_blank" rel="noopener" className="text-blue-600 hover:underline">
+                      {project.playStoreLink.substring(0, 30)}{project.playStoreLink.length > 30 ? '...' : ''}
+                    </a>
+                  </div>
+                )}
+              </div>
+            )}
+
           </div>
           {project.status === 'PAYMENT_PROCESSING' && !isAdmin && (
           <div className="flex items-center w-full px-5 pb-4">
@@ -520,6 +593,7 @@ export default function ProjectCard({
           )}
           {selectedProject && (
             <PaymentDialog
+            projectId={selectedProject.id}
               open={open}
               onClose={setOpen}
               qrId={selectedProject.paymentQrCode || ""}
@@ -563,18 +637,15 @@ export default function ProjectCard({
       )}
 
       {/* Image Viewer Modal */}
-      {selectedImageIndex !== null && project.attachments && (
+      {selectedImageIndex !== null && project.attachments && (project.attachments && (
         <ImageViewer
           images={project.attachments}
           initialIndex={selectedImageIndex}
           onClose={closeImageViewer}
           projectTitle={project.title}
         />
-      )}
-
-
-    
-
+      ))}
+      
       {/* QR Code Selector Modal */}
       {showQrCodeSelector && (
         <div 
@@ -614,6 +685,14 @@ export default function ProjectCard({
           </div>
         </div>
       )}
+
+      {/* Show uploaded deliverables for users and admin */}
+    {project.deliverables && project.deliverables.length >= 0 && (
+  <DeliverablesViewer
+    deliverables={project.deliverables}
+    isAdmin={isAdmin}
+  />
+   )}
 
       {/* Payment Modal */}
       {showPaymentDetails && (
@@ -692,7 +771,7 @@ export default function ProjectCard({
                           required
                         />
                         <span className="ml-2 text-sm text-gray-700">
-                          I confirm that I have made the payment of ${project.budget.toLocaleString()} for {project.title}
+                          I confirm that I have made the payment of ${project.budget.toLocaleString()} for &quot;{project.title}&quot;
                         </span>
                       </label>
                     </div>

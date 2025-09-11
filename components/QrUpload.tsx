@@ -10,7 +10,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 
-export default function QrUpload() {
+interface QrUploadProps {
+  onUploadSuccess?: () => void;
+}
+
+export default function QrUpload({ onUploadSuccess }: QrUploadProps) {
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentQr, setCurrentQr] = useState({ name: '', file: null as File | null });
@@ -49,6 +53,11 @@ export default function QrUpload() {
       setCurrentQr({ name: '', file: null });
       if (fileInputRef.current) fileInputRef.current.value = '';
       setIsModalOpen(false);
+      
+      // Trigger the onUploadSuccess callback if provided
+      if (onUploadSuccess) {
+        onUploadSuccess();
+      }
     } catch (err) {
       console.error(err);
       alert("Failed to upload QR code.");

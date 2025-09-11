@@ -30,7 +30,11 @@ export default function ProjectForm({ isOpen, onClose ,project, onSubmit}: Proje
     contactName: '',
     email: '',
     phone: '',
-    whatsapp: ''
+    whatsapp: '',
+    aliasName: '',
+    password: '',
+    appLink: '',
+    playStoreLink: ''
   });
   useEffect(() => {
     if (project) {
@@ -43,7 +47,11 @@ export default function ProjectForm({ isOpen, onClose ,project, onSubmit}: Proje
         contactName: project.contactName || '',
         email: project.email || '',
         phone: project.phone || '',
-        whatsapp: project.whatsapp || ''
+        whatsapp: project.whatsapp || '',
+        aliasName: project.aliasName || '',
+        password: project.password || '',
+        appLink: project.appLink || '',
+        playStoreLink: project.playStoreLink || ''
       });
     } else {
       setFormData({
@@ -55,7 +63,11 @@ export default function ProjectForm({ isOpen, onClose ,project, onSubmit}: Proje
         contactName: '',
         email: '',
         phone: '',
-        whatsapp: ''
+        whatsapp: '',
+        aliasName: '',
+        password: '',
+        appLink: '',
+        playStoreLink: ''
       });
       setFiles([]);
     }
@@ -261,6 +273,71 @@ export default function ProjectForm({ isOpen, onClose ,project, onSubmit}: Proje
               </div>
             )}
           </div>
+
+          <div>
+              <label htmlFor="aliasName" className="block text-sm font-medium text-gray-700 mb-2">
+                Alias Name 
+              </label>
+              <input
+                type="text"
+                id="aliasName"
+                name="aliasName"
+                value={formData.aliasName}
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-3 border border-gray-300 rounded-md"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                Password 
+              </label>
+              <input
+                type="text"
+                id="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-3 border border-gray-300 rounded-md"
+              />
+            </div>
+
+            {/* App Link */}
+             <div>
+  <label htmlFor="appLink" className="block text-sm font-medium text-gray-700 mb-2">
+    App Link *
+  </label>
+  <input
+    type="url"
+    id="appLink"
+    name="appLink"
+    value={formData.appLink}
+    onChange={handleChange}
+    required
+    className="w-full px-4 py-3 border border-gray-300 rounded-md"
+    placeholder="https://yourapp.com"
+  />
+            </div>
+
+          {/* Play Store Link */}
+            <div>
+              <label htmlFor="playStoreLink" className="block text-sm font-medium text-gray-700 mb-2">
+                Play Store Link *
+              </label>
+              <input
+                type="url"
+                id="playStoreLink"
+                name="playStoreLink"
+                value={formData.playStoreLink}
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-3 border border-gray-300 rounded-md"
+                placeholder="https://play.google.com/store/apps/details?id=..."/>
+            </div>
+
+
 
           {/* Contact Info */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

@@ -1,7 +1,27 @@
+'use client';
+
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { ArrowRight, CheckCircle, Users, Clock, Award } from 'lucide-react';
+import { getAuth } from 'firebase/auth';
+import { useHomePageData } from '@/hooks/useHomePageData';
+import { useEffect, useState } from 'react';
 
 export default function Hero() {
+  const router = useRouter();
+  const auth = getAuth();
+  const [homePageData, loading] = useHomePageData();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  if (loading && !homePageData) {
+    return <div className="h-screen flex items-center justify-center">Loading...</div>;
+  }
+
+  const showVideo = isClient && homePageData?.videoUrl && homePageData.isActive !== false;
   const features = [
     {
       icon: CheckCircle,
@@ -25,6 +45,20 @@ export default function Hero() {
     }
   ];
 
+  const handleGetStarted = () => {
+    const user = auth.currentUser;
+
+    console.log('Logged in User is :', user);
+
+    if (user) {
+      // User is logged in, go to dashboard
+      router.push('/dashboard');
+    } else {
+      // User is not logged in, go to register
+      router.push('/register');
+    }
+  };
+
   return (
     <div className="bg-gradient-to-br from-blue-50 via-white to-blue-50">
       {/* Hero Section */}
@@ -42,23 +76,23 @@ export default function Hero() {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
-            <Link 
-              href="/register"
+            <button 
+              onClick={handleGetStarted}
               className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-8 py-4 rounded-xl font-semibold hover:shadow-lg hover:shadow-emerald-100 transition-all duration-300 hover:-translate-y-0.5 flex items-center space-x-2"
             >
               <span>Get My First Project</span>
               <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform duration-200" />
-            </Link>
-            <Link 
-              href="/login"
+            </button>
+            <button 
+              onClick={() => router.push(auth.currentUser ? '/dashboard' : '/login')}
               className="border-2 border-gray-200 text-gray-700 px-8 py-4 rounded-xl font-semibold hover:border-emerald-500 hover:text-emerald-600 transition-all duration-300 hover:shadow-sm"
             >
-              LogIn
-            </Link>
+              {auth.currentUser ? 'Go to Dashboard' : 'LogIn'}
+            </button>
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 ">
             <div className="text-center bg-white/80 p-6 rounded-xl border border-gray-100 hover:shadow-md transition-shadow duration-300">
               <div className="text-3xl font-bold text-emerald-600 mb-2">500+</div>
               <div className="text-gray-600">Projects Completed</div>
@@ -74,6 +108,41 @@ export default function Hero() {
           </div>
         </div>
       </div>
+      
+      {/* How-to Video Section */}
+      <div className="bg-white py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold text-gray-900 mb-3">See Our Platform in Action</h2>
+            <div className="w-20 h-1 bg-emerald-500 mx-auto mb-6"></div>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              Learn how to submit projects, connect with professionals, and manage your workflow in minutes.
+            </p>
+          </div>
+
+          {showVideo && (
+            <div className="relative w-full max-w-5xl mx-auto aspect-video rounded-xl overflow-hidden shadow-xl">
+              <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+                <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-lg transform transition-transform hover:scale-110">
+                  <svg className="w-10 h-10 text-emerald-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M6.3 2.841A1.5 1.5 0 004 4.11v11.78a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
+                  </svg>
+                </div>
+              </div>
+              <iframe
+                className="w-full h-full relative z-10"
+                src={homePageData.videoUrl}
+                title="How to Use Our Platform"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              ></iframe>
+            </div>
+          )}
+        </div>
+      </div>
+
+
 
       {/* Features Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
@@ -83,6 +152,7 @@ export default function Hero() {
             We provide everything you need to successfully manage and complete your projects
           </p>
         </div>
+
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {features.map((feature, index) => {
@@ -110,13 +180,13 @@ export default function Hero() {
           <p className="text-xl text-gray-600 mb-8">
             Join thousands of satisfied clients who trust us with their projects
           </p>
-          <Link 
-            href="/register"
+          <button 
+            onClick={handleGetStarted}
             className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-8 py-4 rounded-xl font-semibold hover:shadow-lg hover:shadow-emerald-100 transition-all duration-300 hover:-translate-y-0.5 inline-flex items-center space-x-2 group"
           >
             <span>Get Your Project</span>
             <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform duration-200" />
-          </Link>
+          </button>
         </div>
       </div>
     </div>
