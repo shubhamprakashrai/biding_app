@@ -1,5 +1,9 @@
+'use client';
+
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { ArrowRight, CheckCircle, Users, Clock, Award } from 'lucide-react';
+import { getAuth } from 'firebase/auth';
 
 export default function Hero() {
   const features = [
@@ -25,6 +29,23 @@ export default function Hero() {
     }
   ];
 
+  const router = useRouter();
+  const auth = getAuth();
+
+  const handleGetStarted = () => {
+    const user = auth.currentUser;
+
+    console.log('Logged in User is :', user);
+
+    if (user) {
+      // User is logged in, go to dashboard
+      router.push('/dashboard');
+    } else {
+      // User is not logged in, go to register
+      router.push('/register');
+    }
+  };
+
   return (
     <div className="bg-gradient-to-br from-blue-50 via-white to-blue-50">
       {/* Hero Section */}
@@ -42,19 +63,19 @@ export default function Hero() {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
-            <Link 
-              href="/register"
+            <button 
+              onClick={handleGetStarted}
               className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-8 py-4 rounded-xl font-semibold hover:shadow-lg hover:shadow-emerald-100 transition-all duration-300 hover:-translate-y-0.5 flex items-center space-x-2"
             >
               <span>Get My First Project</span>
               <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform duration-200" />
-            </Link>
-            <Link 
-              href="/login"
+            </button>
+            <button 
+              onClick={() => router.push(auth.currentUser ? '/dashboard' : '/login')}
               className="border-2 border-gray-200 text-gray-700 px-8 py-4 rounded-xl font-semibold hover:border-emerald-500 hover:text-emerald-600 transition-all duration-300 hover:shadow-sm"
             >
-              LogIn
-            </Link>
+              {auth.currentUser ? 'Go to Dashboard' : 'LogIn'}
+            </button>
           </div>
 
           {/* Stats */}
@@ -144,13 +165,13 @@ export default function Hero() {
           <p className="text-xl text-gray-600 mb-8">
             Join thousands of satisfied clients who trust us with their projects
           </p>
-          <Link 
-            href="/register"
+          <button 
+            onClick={handleGetStarted}
             className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-8 py-4 rounded-xl font-semibold hover:shadow-lg hover:shadow-emerald-100 transition-all duration-300 hover:-translate-y-0.5 inline-flex items-center space-x-2 group"
           >
             <span>Get Your Project</span>
             <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform duration-200" />
-          </Link>
+          </button>
         </div>
       </div>
     </div>
