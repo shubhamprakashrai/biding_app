@@ -42,6 +42,7 @@ export interface Project {
   payment?: PaymentInfo;
   paymentProof?: string;
   transactionId?: string;
+  
   payments?: Array<{
     id: string;
     amount: number;
@@ -57,6 +58,12 @@ export interface Project {
   playStoreLink?: string;
   apkFile?: ProjectFile;
   zipFile?: ProjectFile;
+  deliverables?: Array<{
+    fileName: string;
+    type: "apk" | "zip" | "code";
+    uploadedAt: any;
+    url: string;
+  }>;
 }
 
 export interface Proposal {

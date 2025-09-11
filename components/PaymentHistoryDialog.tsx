@@ -45,11 +45,11 @@ export default function PaymentHistoryDialog({ open, onClose, payments }: Paymen
 
               {/* Dates */}
               <p className="text-xs text-gray-500">
-                Submitted: {format(payment.submittedAt.toDate(), "dd MMM yyyy, HH:mm")}
+                Submitted: {format(payment.submittedAt, "dd MMM yyyy, HH:mm")}
               </p>
               {payment.reviewedAt && (
                 <p className="text-xs text-gray-500">
-                  Reviewed: {format(payment.reviewedAt.toDate(), "dd MMM yyyy, HH:mm")}
+                  Reviewed: {format(payment.reviewedAt, "dd MMM yyyy, HH:mm")}
                 </p>
               )}
 

@@ -9,6 +9,9 @@ import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/app/firebase/firebase';
 import PaymentDialog from './PaymentDialog';
 import PaymentHistoryDialog from './PaymentHistoryDialog';
+import DeliverablesUpload from './DeliverablesUpload';
+import DeliverablesUploadModal from './DeliverablesUpload';
+import DeliverablesViewer from './DeliverablesViewer';
 
 // Dynamically import QrCodeSelector to avoid SSR issues with Firestore
 const QrCodeSelector = dynamic(() => import('./QrCodeSelector'), {
@@ -80,6 +83,10 @@ const ImageViewer = ({ images, initialIndex, onClose, projectTitle }: ImageViewe
   };
 
   if (!images.length) return null;
+
+
+
+  
 
   return (
     <div 
@@ -181,18 +188,23 @@ export default function ProjectCard({
   const [showQrCodeSelector, setShowQrCodeSelector] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
-
+  const [showDeliverableModal, setShowDeliverableModal] = useState(false);
 
   const [open, setOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
 
-  const handlePaymentClick = (proj: Project) => {
-  setSelectedProject(proj);
-  setOpen(true);
-};
-  
+  const canUploadDeliverables =
+  project.transactionId &&
+  (project.status === "PAYMENT_COMPLETED" || 
+   project.status === "PAYMENT_PROCESSING" ||
+   project.status === "PAYMENT_UNDER_REVIEW");
 
-  
+
+  const handlePaymentClick = (proj: Project) => {
+    setSelectedProject(proj);
+    setOpen(true);
+  };
+
   // Update selected QR code when project prop changes
   useEffect(() => {
     if (project.paymentQrCode) {
@@ -338,6 +350,8 @@ export default function ProjectCard({
     document.body.style.overflow = 'auto';
   };
 
+ 
+
   return (
     <div className={cn(
       'group bg-white rounded-xl border border-gray-100 hover:shadow-md transition-all duration-300 overflow-hidden h-full flex flex-col',
@@ -420,6 +434,22 @@ export default function ProjectCard({
         </p>
 
 
+        {/* Deliverables Upload */}
+
+        {canUploadDeliverables && isAdmin && (
+  <div className="mt-4">
+    <Button onClick={() => setShowDeliverableModal(true)} className="w-full">
+      Upload Deliverables
+    </Button>
+
+    <DeliverablesUploadModal
+    projectId={project.id}
+      open={showDeliverableModal}
+      onClose={() => setShowDeliverableModal(false)}
+    />
+  </div>
+)}
+
         {/* Payment Details Button */}
         <div className="mt-4 space-y-2">
           {project.paymentProof && (
@@ -472,7 +502,8 @@ export default function ProjectCard({
             </div>
           ) : null}
         </div>
-
+        
+        
         {/* Project metadata */}
         <div className="mt-auto space-y-3">
           <div className="flex items-center justify-between text-sm">
@@ -656,6 +687,14 @@ export default function ProjectCard({
           </div>
         </div>
       )}
+
+      {/* Show uploaded deliverables for users and admin */}
+{project.deliverables && project.deliverables.length >= 0 && (
+  <DeliverablesViewer
+    deliverables={project.deliverables}
+    isAdmin={isAdmin}
+  />
+)}
 
       {/* Payment Modal */}
       {showPaymentDetails && (
