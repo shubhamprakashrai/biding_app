@@ -192,7 +192,7 @@ export default function Navigation() {
 
   const UserAvatar = ({ size = 'small', user }: { size?: 'small' | 'large', user: UserData }) => {
     const sizeClasses = size === 'small' ? 'w-8 h-8' : 'w-10 h-10';
-    const textSizeClass = size === 'small' ? '' : 'text-lg';
+    const textSizeClass = size === 'small' ? 'text-sm' : 'text-lg';
     
     if (shouldShowImage(user.photoURL)) {
       return (
@@ -200,7 +200,7 @@ export default function Navigation() {
           <img 
             src={user.photoURL} 
             alt={user.name || 'User'} 
-            className={`${sizeClasses} rounded-full object-cover border-2 border-white shadow-sm`}
+            className={`${sizeClasses} rounded-full object-cover border-2 border-cyan-400/40 shadow-md transition-all duration-300 hover:scale-105 hover:border-cyan-300/60`}
             onError={() => handleImageError(user.photoURL!)}
             onLoad={() => console.log('Image loaded successfully:', user.photoURL)}
           />
@@ -209,7 +209,7 @@ export default function Navigation() {
     }
     
     return (
-      <div className={`${sizeClasses} rounded-full bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center text-emerald-600 font-medium ${textSizeClass}`}>
+      <div className={`${sizeClasses} rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center text-white font-semibold ${textSizeClass} shadow-md border border-cyan-400/60 hover:scale-105 hover:border-cyan-300/80 transition-all duration-300`}>
         {user.name?.charAt(0)?.toUpperCase() || 'U'}
       </div>
     );
@@ -217,11 +217,14 @@ export default function Navigation() {
 
   if (loading) {
     return (
-      <nav className="bg-white/80 backdrop-blur-md border-b border-gray-100 shadow-sm sticky top-0 z-50">
+      <nav className="bg-gradient-to-r from-blue-950 to-blue-900 border-b border-blue-800/50 shadow-xl sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <div className="w-32 h-6 bg-gray-200 rounded animate-pulse"></div>
-            <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse"></div>
+            <div className="flex items-center space-x-2">
+              <div className="w-9 h-9 bg-blue-800/60 rounded-lg animate-pulse"></div>
+              <div className="w-32 h-6 bg-blue-800/60 rounded animate-pulse"></div>
+            </div>
+            <div className="w-8 h-8 rounded-full bg-blue-800/60 animate-pulse"></div>
           </div>
         </div>
       </nav>
@@ -229,15 +232,15 @@ export default function Navigation() {
   }
 
   return (
-    <nav className="bg-white/80 backdrop-blur-md border-b border-gray-100 shadow-sm sticky top-0 z-50">
+    <nav className="bg-blue-950/90 backdrop-blur-md border-b border-blue-800/50 shadow-lg sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2 group">
-            <div className="w-9 h-9 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center transform group-hover:rotate-6 transition-transform duration-300">
+            <div className="w-9 h-9 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-lg flex items-center justify-center transform group-hover:rotate-6 transition-all duration-500 group-hover:shadow-[0_0_25px_rgba(34,211,238,0.4)] border border-cyan-400/30">
               <span className="text-white font-bold text-sm">SCL</span>
             </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
+            <span className="text-xl font-bold bg-gradient-to-r from-cyan-300 to-blue-400 bg-clip-text text-transparent">
               {currentUser?.name?.split(' ')[0] || 'SourceCodeLelo'}
             </span>
           </Link>
@@ -250,13 +253,13 @@ export default function Navigation() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                  className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 ${
                     isActive(link.href)
-                      ? 'text-emerald-600 bg-emerald-50/80 shadow-sm'
-                      : 'text-gray-600 hover:text-emerald-600 hover:bg-gray-50/50'
+                      ? 'text-white bg-blue-800/60 shadow-lg shadow-blue-500/20 border border-cyan-500/30 backdrop-blur-sm'
+                      : 'text-blue-200 hover:text-white hover:bg-blue-800/40 hover:border-cyan-400/30 border border-transparent hover:shadow-[0_0_15px_rgba(34,211,238,0.1)]'
                   }`}
                 >
-                  <Icon size={18} className={isActive(link.href) ? 'text-emerald-500' : 'text-gray-400'} />
+                  <Icon size={18} className={isActive(link.href) ? 'text-cyan-300' : 'text-blue-300 group-hover:text-cyan-300'} />
                   <span>{link.label}</span>
                 </Link>
               );
@@ -265,7 +268,7 @@ export default function Navigation() {
             {currentUser && (
               <div className="relative ml-2">
                 <button
-                  className="profile-button flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50/50 transition-colors duration-200"
+                  className="profile-button flex items-center space-x-2 px-3 py-2 rounded-xl text-sm font-medium text-blue-100 hover:bg-blue-800/40 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all duration-300 border border-transparent hover:border-cyan-400/30 hover:shadow-[0_0_15px_rgba(34,211,238,0.1)]"
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -282,31 +285,31 @@ export default function Navigation() {
                 </button>
 
                 {isProfileOpen && (
-                  <div className="profile-dropdown absolute right-0 mt-2 w-56 rounded-xl bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
-                    <div className="p-4 border-b border-gray-100 flex items-center space-x-3">
+                  <div className="profile-dropdown absolute right-0 mt-2 w-56 rounded-xl bg-gradient-to-b from-blue-900 to-blue-950 backdrop-blur-xl shadow-2xl ring-1 ring-blue-700/50 focus:outline-none z-50 overflow-hidden border border-blue-700/50">
+                    <div className="p-4 border-b border-blue-800/50 flex items-center space-x-3">
                       <UserAvatar size="large" user={currentUser} />
                       <div>
-                        <p className="text-sm font-medium text-gray-900">{currentUser.name}</p>
-                        <p className="text-xs text-gray-500">{currentUser.role === 'ADMIN' ? 'Administrator' : 'User'}</p>
+                        <p className="text-sm font-semibold text-white">{currentUser.name}</p>
+                        <p className="text-xs text-cyan-300/90">{currentUser.role === 'ADMIN' ? 'Administrator' : 'User'}</p>
                       </div>
                     </div>
                     <div className="py-1">
                       <Link
                         href="/userprofile"
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                        className="block w-full text-left px-4 py-2.5 text-sm text-blue-100 hover:bg-blue-800/60 transition-colors hover:text-white hover:pl-5 duration-200"
                         onClick={() => setIsProfileOpen(false)}
                       >
                         Your Profile
                       </Link>
                       <Link
                         href="/settings"
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                        className="block w-full text-left px-4 py-2.5 text-sm text-blue-100 hover:bg-blue-800/60 transition-colors hover:text-white hover:pl-5 duration-200"
                         onClick={() => setIsProfileOpen(false)}
                       >
                         Settings
                       </Link>
                     </div>
-                    <div className="py-1 border-t border-gray-100">
+                    <div className="py-1 border-t border-blue-800/50">
                       <button
                         onClick={(e) => {
                           e.preventDefault();
@@ -314,7 +317,7 @@ export default function Navigation() {
                           console.log('Logout button clicked');
                           handleLogout();
                         }}
-                        className="block w-full text-left px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 rounded-b-lg transition-colors"
+                        className="block w-full text-left px-4 py-2.5 text-sm text-rose-400 hover:bg-rose-500/10 transition-colors hover:text-rose-300 hover:pl-5 duration-200"
                       >
                         Sign out
                       </button>
@@ -329,7 +332,7 @@ export default function Navigation() {
           <div className="md:hidden">
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="inline-flex items-center justify-center p-2 rounded-lg text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-emerald-500 transition-colors duration-200"
+              className="inline-flex items-center justify-center p-2 rounded-lg text-blue-200 hover:bg-blue-800/40 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 transition-all duration-300 border border-transparent hover:border-cyan-400/30 hover:shadow-[0_0_15px_rgba(34,211,238,0.1)]"
               aria-expanded="false"
             >
               <span className="sr-only">Open main menu</span>
@@ -340,7 +343,7 @@ export default function Navigation() {
 
         {/* Mobile Navigation */}
         {isMenuOpen && (
-          <div className="md:hidden bg-white/95 backdrop-blur-sm rounded-xl shadow-xl mx-2 my-2 overflow-hidden">
+          <div className="md:hidden bg-gradient-to-b from-blue-900 to-blue-950 backdrop-blur-xl rounded-xl shadow-2xl mx-2 my-2 overflow-hidden border border-blue-700/50">
             <div className="px-2 pt-2 pb-3 space-y-1">
               {getLinks().map((link) => {
                 const Icon = link.icon;
@@ -349,25 +352,25 @@ export default function Navigation() {
                     key={link.href}
                     href={link.href}
                     onClick={() => setIsMenuOpen(false)}
-                    className={`flex items-center space-x-3 px-4 py-3 rounded-lg text-base font-medium transition-colors duration-200 ${
+                    className={`flex items-center space-x-3 px-4 py-3 rounded-xl text-base font-medium transition-all duration-300 ${
                       isActive(link.href)
-                        ? 'text-emerald-600 bg-emerald-50/80'
-                        : 'text-gray-700 hover:text-emerald-600 hover:bg-gray-50/50'
+                        ? 'text-white bg-blue-800/60 border border-cyan-500/30 shadow-md'
+                        : 'text-blue-200 hover:text-white hover:bg-blue-800/40 border border-transparent hover:border-cyan-400/30 hover:shadow-[0_0_15px_rgba(34,211,238,0.1)]'
                     }`}
                   >
-                    <Icon size={20} className={isActive(link.href) ? 'text-emerald-500' : 'text-gray-400'} />
+                    <Icon size={20} className={isActive(link.href) ? 'text-cyan-300' : 'text-blue-300 group-hover:text-cyan-300'} />
                     <span>{link.label}</span>
                   </Link>
                 );
               })}
 
               {currentUser && (
-                <div className="pt-3 border-t border-gray-100 mt-3">
+                <div className="pt-3 border-t border-blue-800/50 mt-3">
                   <div className="px-4 py-3 flex items-center space-x-3">
                     <UserAvatar size="large" user={currentUser} />
                     <div>
-                      <p className="text-sm font-medium text-gray-900">{currentUser.name}</p>
-                      <p className="text-xs text-gray-500">{currentUser.role === 'ADMIN' ? 'Administrator' : 'User'}</p>
+                      <p className="text-sm font-medium text-white">{currentUser.name}</p>
+                      <p className="text-xs text-cyan-300/80">{currentUser.role === 'ADMIN' ? 'Administrator' : 'User'}</p>
                     </div>
                   </div>
                   <div className="mt-2 space-y-1">
@@ -377,7 +380,7 @@ export default function Navigation() {
                         setIsMenuOpen(false);
                         setIsProfileOpen(false);
                       }}
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                      className="block w-full text-left px-4 py-2.5 text-sm text-blue-100 hover:bg-blue-800/50 hover:text-white transition-colors"
                     >
                       Your Profile
                     </Link>
@@ -388,7 +391,7 @@ export default function Navigation() {
                         setIsMenuOpen(false);
                         setIsProfileOpen(false);
                       }}
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                      className="block w-full text-left px-4 py-2.5 text-sm text-blue-100 hover:bg-blue-800/50 hover:text-white transition-colors"
                     >
                       Settings
                     </Link>
@@ -399,7 +402,7 @@ export default function Navigation() {
                         console.log('Mobile logout clicked');
                         handleLogout();
                       }}
-                      className="block w-full text-left px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 rounded-lg mt-2 transition-colors"
+                      className="block w-full text-left px-4 py-2.5 text-sm text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors hover:text-rose-300"
                     >
                       Sign out
                     </button>

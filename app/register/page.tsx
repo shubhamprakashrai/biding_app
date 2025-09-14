@@ -103,67 +103,71 @@ export default function RegisterForm() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-900 to-blue-950 flex items-center justify-center p-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden"
+        className="w-full max-w-md bg-blue-900/30 backdrop-blur-sm rounded-2xl shadow-xl border border-blue-700/50 p-8"
       >
-        
-        <div className="p-8">
-          {/* Header */}
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-gray-900">Create Account</h2>
-            <p className="mt-2 text-sm text-gray-600">Join us today! It takes only a few steps</p>
-          </div>
+        <div className="text-center mb-8">
+          <h1 className="text-2xl font-bold text-white mb-2">Create an account</h1>
+          <p className="text-blue-200/80">Join us today!</p>
+        </div>
 
-           {/* Google Sign In Button */}
-           <div className="mt-6 mb-6">
-            <GoogleLoginButton /> 
-          </div>
+        <div className="space-y-6">
+          <GoogleLoginButton />
 
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-200"></div>
+              <div className="w-full border-t border-blue-700/50"></div>
             </div>
-            <div className="relative flex justify-center text-sm mb-6">
-              <span className="px-2 bg-white text-gray-500">Or continue with details</span>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-blue-900/30 text-blue-200/70">Or continue with email</span>
             </div>
           </div>
 
-          {/* Errors & Success */}
           <AnimatePresence>
             {errors.form && (
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
-                className="mb-6 p-4 bg-red-50 text-red-700 rounded-lg flex items-start"
+                className="bg-red-500/10 border-l-4 border-red-400 p-4 mb-4 rounded"
               >
-                <FiAlertCircle className="mt-0.5 mr-2 flex-shrink-0" />
-                <span>{errors.form}</span>
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <FiAlertCircle className="h-5 w-5 text-red-300" />
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm text-red-100">{errors.form}</p>
+                  </div>
+                </div>
               </motion.div>
             )}
             {success && (
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="mb-6 p-4 bg-green-50 text-green-700 rounded-lg flex items-start"
+                className="bg-green-500/10 border-l-4 border-green-400 p-4 mb-4 rounded"
               >
-                <FiCheck className="mt-0.5 mr-2 flex-shrink-0" />
-                <span>{success}</span>
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <FiCheck className="h-5 w-5 text-green-300" />
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm text-green-100">{success}</p>
+                  </div>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
 
-          {/* Form */}
-          <form className="space-y-5" onSubmit={handleSubmit}>
-            {/* Full Name */}
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+              <label htmlFor="name" className="block text-sm font-medium text-blue-100 mb-1">Full Name</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FiUser className="h-5 w-5 text-gray-400" />
+                  <FiUser className="h-5 w-5 text-blue-400/80" />
                 </div>
                 <input
                   id="name"
@@ -172,18 +176,17 @@ export default function RegisterForm() {
                   placeholder="John Doe"
                   value={formData.name}
                   onChange={handleChange}
-                  className={`block w-full pl-10 pr-3 py-2.5 border ${errors.name ? 'border-red-300' : 'border-gray-300'} rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500`}
+                  className={`block w-full pl-10 pr-3 py-2.5 bg-blue-900/50 border ${errors.name ? 'border-red-400/50' : 'border-blue-700/50'} rounded-lg shadow-sm text-white placeholder-blue-400/70 focus:border-blue-400 focus:ring-1 focus:ring-blue-500/50 focus:outline-none transition-colors`}
                 />
               </div>
-              {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
+              {errors.name && <p className="mt-1 text-sm text-red-300">{errors.name}</p>}
             </div>
 
-            {/* Email */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+              <label htmlFor="email" className="block text-sm font-medium text-blue-100 mb-1">Email Address</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FiMail className="h-5 w-5 text-gray-400" />
+                  <FiMail className="h-5 w-5 text-blue-400/80" />
                 </div>
                 <input
                   id="email"
@@ -192,18 +195,17 @@ export default function RegisterForm() {
                   placeholder="you@example.com"
                   value={formData.email}
                   onChange={handleChange}
-                  className={`block w-full pl-10 pr-3 py-2.5 border ${errors.email ? 'border-red-300' : 'border-gray-300'} rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500`}
+                  className={`block w-full pl-10 pr-3 py-2.5 bg-blue-900/50 border ${errors.email ? 'border-red-400/50' : 'border-blue-700/50'} rounded-lg shadow-sm text-white placeholder-blue-400/70 focus:border-blue-400 focus:ring-1 focus:ring-blue-500/50 focus:outline-none transition-colors`}
                 />
               </div>
-              {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
+              {errors.email && <p className="mt-1 text-sm text-red-300">{errors.email}</p>}
             </div>
 
-            {/* Password */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+              <label htmlFor="password" className="block text-sm font-medium text-blue-100 mb-1">Password</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FiLock className="h-5 w-5 text-gray-400" />
+                  <FiLock className="h-5 w-5 text-blue-400/80" />
                 </div>
                 <input
                   id="password"
@@ -212,25 +214,26 @@ export default function RegisterForm() {
                   placeholder="••••••••"
                   value={formData.password}
                   onChange={handleChange}
-                  className={`block w-full pl-10 pr-10 py-2.5 border ${errors.password ? 'border-red-300' : 'border-gray-300'} rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500`}
+                  className={`block w-full pl-10 pr-10 py-2.5 bg-blue-900/50 border ${errors.password ? 'border-red-400/50' : 'border-blue-700/50'} rounded-lg shadow-sm text-white placeholder-blue-400/70 focus:border-blue-400 focus:ring-1 focus:ring-blue-500/50 focus:outline-none transition-colors`}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-blue-400/70 hover:text-blue-300 transition-colors"
                 >
                   {showPassword ? <FiEyeOff className="h-5 w-5" /> : <FiEye className="h-5 w-5" />}
                 </button>
               </div>
-              {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password}</p>}
+              {errors.password && <p className="mt-1 text-sm text-red-300">{errors.password}</p>}
             </div>
 
-            {/* Confirm Password */}
             <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-blue-100 mb-1">
+                Confirm Password
+              </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FiLock className="h-5 w-5 text-gray-400" />
+                  <FiLock className="h-5 w-5 text-blue-400/80" />
                 </div>
                 <input
                   id="confirmPassword"
@@ -239,24 +242,42 @@ export default function RegisterForm() {
                   placeholder="••••••••"
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  className={`block w-full pl-10 pr-10 py-2.5 border ${errors.confirmPassword ? 'border-red-300' : 'border-gray-300'} rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500`}
+                  className={`block w-full pl-10 pr-10 py-2.5 bg-blue-900/50 border ${errors.confirmPassword ? 'border-red-400/50' : 'border-blue-700/50'} rounded-lg shadow-sm text-white placeholder-blue-400/70 focus:border-blue-400 focus:ring-1 focus:ring-blue-500/50 focus:outline-none transition-colors`}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-blue-400/70 hover:text-blue-300 transition-colors"
                 >
                   {showPassword ? <FiEyeOff className="h-5 w-5" /> : <FiEye className="h-5 w-5" />}
                 </button>
               </div>
-              {errors.confirmPassword && <p className="mt-1 text-sm text-red-600">{errors.confirmPassword}</p>}
+              {errors.confirmPassword && (
+                <p className="mt-1 text-sm text-red-300">{errors.confirmPassword}</p>
+              )}
             </div>
-            {/* Submit */}
+
+            <div>
+              <label htmlFor="role" className="block text-sm font-medium text-blue-100 mb-1">
+                I am a
+              </label>
+              <select
+                id="role"
+                name="role"
+                value={formData.role}
+                onChange={handleChange}
+                className="block w-full pl-3 pr-10 py-2.5 bg-blue-900/50 border border-blue-700/50 rounded-lg shadow-sm text-white focus:border-blue-400 focus:ring-1 focus:ring-blue-500/50 focus:outline-none transition-colors"
+              >
+                <option value="USER">User</option>
+                <option value="DEVELOPER">Developer</option>
+              </select>
+            </div>
+
             <div className="pt-2">
               <button
                 type="submit"
                 disabled={loading}
-                className={`group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-xl text-white bg-gradient-to-r from-emerald-500 to-teal-600 hover:shadow-md hover:shadow-emerald-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-all duration-200 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
+                className={`group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-xl text-white bg-gradient-to-r from-cyan-500 to-blue-600 hover:shadow-lg hover:shadow-cyan-500/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-400 transition-all duration-200 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
               >
                 {loading ? (
                   <div className="flex items-center space-x-2">
@@ -269,6 +290,14 @@ export default function RegisterForm() {
               </button>
             </div>
 
+            <div className="text-center text-sm pt-2">
+              <p className="text-blue-200/80">
+                Already have an account?{' '}
+                <a href="/login" className="font-medium text-cyan-300 hover:text-white transition-colors">
+                  Sign in
+                </a>
+              </p>
+            </div>
           </form>
         </div>
       </motion.div>

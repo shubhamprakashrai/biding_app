@@ -94,83 +94,90 @@ export default function AdminPage() {
     totalRevenue: proposals.filter(p => p.status === 'ACCEPTED').reduce((sum, p) => sum + p.proposedBudget, 0)
   };
 
-  return (<div className="min-h-screen bg-gray-50">
-
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  return (<div className="min-h-screen bg-gradient-to-br from-blue-900 to-blue-950 p-4">
+    <div className="max-w-7xl mx-auto py-8">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Admin Dashboard</h1>
-        <p className="text-gray-600">Manage projects, proposals, and client communications</p>
+        <h1 className="text-3xl font-bold text-white mb-2">Admin Dashboard</h1>
+        <p className="text-blue-200/80">Manage projects, proposals, and client communications</p>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+        <div className="bg-blue-900/30 backdrop-blur-sm p-6 rounded-xl shadow-lg border border-blue-700/50">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Total Projects</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.totalProjects}</p>
+              <p className="text-sm font-medium text-blue-200/80">Total Projects</p>
+              <p className="text-2xl font-bold text-white">{stats.totalProjects}</p>
             </div>
-            <Briefcase className="text-blue-600" size={24} />
+            <div className="p-2 rounded-full bg-cyan-500/20">
+              <Briefcase className="text-cyan-300" size={20} />
+            </div>
           </div>
         </div>
         
-        <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+        <div className="bg-blue-900/30 backdrop-blur-sm p-6 rounded-xl shadow-lg border border-blue-700/50">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Active Proposals</p>
-              <p className="text-2xl font-bold text-yellow-600">{stats.activeProposals}</p>
+              <p className="text-sm font-medium text-blue-200/80">Active Proposals</p>
+              <p className="text-2xl font-bold text-amber-300">{stats.activeProposals}</p>
             </div>
-            <FileText className="text-yellow-600" size={24} />
+            <div className="p-2 rounded-full bg-amber-500/20">
+              <FileText className="text-amber-300" size={20} />
+            </div>
           </div>
         </div>
         
-        <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+        <div className="bg-blue-900/30 backdrop-blur-sm p-6 rounded-xl shadow-lg border border-blue-700/50">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Accepted</p>
-              <p className="text-2xl font-bold text-green-600">{stats.acceptedProposals}</p>
+              <p className="text-sm font-medium text-blue-200/80">Accepted</p>
+              <p className="text-2xl font-bold text-emerald-300">{stats.acceptedProposals}</p>
             </div>
-            <Users className="text-green-600" size={24} />
+            <div className="p-2 rounded-full bg-emerald-500/20">
+              <Users className="text-emerald-300" size={20} />
+            </div>
           </div>
         </div>
         
-        <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+        <div className="bg-blue-900/30 backdrop-blur-sm p-6 rounded-xl shadow-lg border border-blue-700/50">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Revenue</p>
-              <p className="text-2xl font-bold text-purple-600">${stats.totalRevenue.toLocaleString()}</p>
+              <p className="text-sm font-medium text-blue-200/80">Revenue</p>
+              <p className="text-2xl font-bold text-purple-300">${stats.totalRevenue.toLocaleString()}</p>
             </div>
-            <DollarSign className="text-purple-600" size={24} />
+            <div className="p-2 rounded-full bg-purple-500/20">
+              <DollarSign className="text-purple-300" size={20} />
+            </div>
           </div>
         </div>
 
         {/* QR Code Management */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+          <div className="bg-blue-900/30 backdrop-blur-sm p-6 rounded-xl shadow-lg border border-blue-700/50">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">QR Code Management</h3>
-                <p className="text-sm text-gray-500">Upload and manage your QR codes</p>
+                <h3 className="text-lg font-semibold text-white">QR Code Management</h3>
+                <p className="text-sm text-blue-200/80">Upload and manage your QR codes</p>
               </div>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+              <div className="bg-blue-900/20 p-4 rounded-lg border border-blue-700/50">
                 <div className="flex items-center justify-between mb-4">
-                  <h4 className="font-medium text-gray-800">Upload New QR Code</h4>
-                  <div className="p-2 rounded-full bg-indigo-100">
-                    <ImageIcon className="text-indigo-600" size={16} />
+                  <h4 className="font-medium text-blue-100">Upload New QR Code</h4>
+                  <div className="p-2 rounded-full bg-indigo-500/20">
+                    <ImageIcon className="text-indigo-300" size={16} />
                   </div>
                 </div>
                 <QrUpload onUploadSuccess={() => setQrRefreshTrigger(prev => prev + 1)} />
               </div>
               
-              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+              <div className="bg-blue-900/20 p-4 rounded-lg border border-blue-700/50">
                 <div className="flex items-center justify-between mb-4">
-                  <h4 className="font-medium text-gray-800">Manage QR Codes</h4>
-                  <div className="p-2 rounded-full bg-green-100">
-                    <ImageIcon className="text-green-600" size={16} />
+                  <h4 className="font-medium text-blue-100">Manage QR Codes</h4>
+                  <div className="p-2 rounded-full bg-green-500/20">
+                    <ImageIcon className="text-green-300" size={16} />
                   </div>
                 </div>
                 <QrCodeDropdown key={qrRefreshTrigger} />
@@ -180,13 +187,11 @@ export default function AdminPage() {
         </div>
       </div>
 
-     
-
       {/* Available Projects */}
-      <div className="bg-white rounded-lg shadow-md border border-gray-200 mb-8">
-        <div className="p-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900 flex items-center space-x-2">
-            <Briefcase size={20} />
+      <div className="bg-blue-900/30 backdrop-blur-sm rounded-xl shadow-lg border border-blue-700/50 overflow-hidden">
+        <div className="p-6 border-b border-blue-700/50">
+          <h2 className="text-xl font-semibold text-white flex items-center space-x-2">
+            <Briefcase className="text-cyan-300" size={20} />
             <span>Available App</span>
           </h2>
         </div>

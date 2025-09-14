@@ -1,5 +1,5 @@
 import { Project } from '@/types';
-import { Calendar, DollarSign, Clock, MessageSquare, Edit2, ArrowRight, ChevronDown, Check, X, Download, CreditCard, Loader2, Copy, QrCode, CheckCircle } from 'lucide-react';
+import { Calendar, DollarSign, Clock, MessageSquare, Edit2, ArrowRight, ChevronDown, Check, X, Download, CreditCard, Loader2, Copy, QrCode, CheckCircle, Upload } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState, useRef, useEffect } from 'react';
 import { Button } from './ui/button';
@@ -289,36 +289,44 @@ export default function ProjectCard({
   
 
   const getStatusConfig = (status: Project['status']) => {
-    const baseStyles = 'px-2.5 py-1 rounded-full text-xs font-medium inline-flex items-center';
+    const baseStyles = 'px-3 py-1 rounded-full text-xs font-medium inline-flex items-center border';
     
     switch (status) {
       case 'PENDING':
         return {
-          className: `${baseStyles} bg-amber-50 text-amber-700 border border-amber-100`,
-          dot: 'w-2 h-2 rounded-full bg-amber-500 mr-1.5',
-          icon: <Clock size={12} className="mr-1.5 text-amber-500" />
+          className: `${baseStyles} bg-amber-500/10 text-amber-300 border-amber-500/30`,
+          dot: 'w-2 h-2 rounded-full bg-amber-400 mr-1.5',
+          icon: <Clock size={12} className="mr-1.5 text-amber-400" />
         };
       case 'IN_PROGRESS':
         return {
-          className: `${baseStyles} bg-blue-50 text-blue-700 border border-blue-100`,
-          dot: 'w-2 h-2 rounded-full bg-blue-500 mr-1.5',
-          icon: <div className="w-2 h-2 rounded-full bg-blue-500 mr-1.5 animate-pulse" />
+          className: `${baseStyles} bg-blue-500/10 text-blue-300 border-blue-500/30`,
+          dot: 'w-2 h-2 rounded-full bg-blue-400 mr-1.5',
+          icon: <div className="w-2 h-2 rounded-full bg-blue-400 mr-1.5 animate-pulse" />
         };
+      case 'PAYMENT_PROCESSING':
+      case 'PAYMENT_UNDER_REVIEW':
+        return {
+          className: `${baseStyles} bg-purple-500/10 text-purple-300 border-purple-500/30`,
+          dot: 'w-2 h-2 rounded-full bg-purple-400 mr-1.5',
+          icon: <div className="w-2 h-2 rounded-full bg-purple-400 mr-1.5 animate-pulse" />
+        };
+      case 'PAYMENT_COMPLETED':
       case 'COMPLETED':
         return {
-          className: `${baseStyles} bg-emerald-50 text-emerald-700 border border-emerald-100`,
-          dot: 'w-2 h-2 rounded-full bg-emerald-500 mr-1.5',
-          icon: <div className="w-2 h-2 rounded-full bg-emerald-500 mr-1.5" />
+          className: `${baseStyles} bg-emerald-500/10 text-emerald-300 border-emerald-500/30`,
+          dot: 'w-2 h-2 rounded-full bg-emerald-400 mr-1.5',
+          icon: <CheckCircle size={12} className="mr-1.5 text-emerald-400" />
         };
       case 'CANCELLED':
         return {
-          className: `${baseStyles} bg-red-50 text-red-700 border border-red-100`,
-          dot: 'w-2 h-2 rounded-full bg-red-500 mr-1.5',
-          icon: <div className="w-2 h-2 rounded-full bg-red-500 mr-1.5" />
+          className: `${baseStyles} bg-red-500/10 text-red-300 border-red-500/30`,
+          dot: 'w-2 h-2 rounded-full bg-red-400 mr-1.5',
+          icon: <X size={12} className="mr-1.5 text-red-400" />
         };
       default:
         return {
-          className: `${baseStyles} bg-gray-50 text-gray-700 border border-gray-100`,
+          className: `${baseStyles} bg-gray-500/10 text-gray-300 border-gray-500/30`,
           dot: 'w-2 h-2 rounded-full bg-gray-400 mr-1.5',
           icon: <div className="w-2 h-2 rounded-full bg-gray-400 mr-1.5" />
         };
@@ -352,14 +360,18 @@ export default function ProjectCard({
 
   return (
     <div className={cn(
-      'group bg-white rounded-xl border border-gray-100 hover:shadow-md transition-all duration-300 overflow-hidden h-full flex flex-col',
+      'group bg-gradient-to-br from-blue-900 to-blue-950 rounded-xl border-2 border-blue-600/50 hover:border-blue-400/80 hover:shadow-2xl transition-all duration-300 overflow-hidden h-full flex flex-col backdrop-blur-sm',
+      'hover:shadow-blue-500/30 transform hover:-translate-y-1',
+      'dark:from-blue-800/90 dark:to-blue-900/90 dark:border-blue-500/60 dark:hover:border-blue-300/80',
+      'ring-2 ring-blue-500/10 hover:ring-blue-400/20',
+      'transition-all duration-300 ease-in-out',
       className
     )}>
       <div className="p-5 flex-1 flex flex-col min-w-0">
         {/* Header with status */}
         <div className="flex justify-between items-start mb-4">
           <div className="flex-1 min-w-0">
-            <h3 className="text-lg font-semibold text-gray-900 group-hover:text-emerald-600 transition-colors duration-200 line-clamp-2">
+            <h3 className="text-lg font-semibold text-white group-hover:text-cyan-300 transition-colors duration-200 line-clamp-2">
               {project.title}
             </h3>
             {/* QR Code Selector for Payment Processing */}
@@ -371,7 +383,7 @@ export default function ProjectCard({
                   onQrCodeSelect={setSelectedQrCode}
                 />
                 {showQrError && !selectedQrCode && (
-                  <p className="mt-1 text-sm text-red-600">
+                  <p className="mt-1 text-sm text-red-400">
                     Please select a QR code before setting status to Payment Processing
                   </p>
                 )}
@@ -381,42 +393,49 @@ export default function ProjectCard({
           <div className="flex items-center">
             <div className={cn(
               statusConfig.className,
-              'inline-flex items-center',
-              isAdmin && 'cursor-pointer hover:bg-opacity-90 transition-all'
+              'inline-flex items-center backdrop-blur-sm',
+              isAdmin && 'cursor-pointer hover:bg-opacity-30 transition-all'
             )}>
               {statusConfig.icon}
               {String(project?.status || 'PENDING').replace(/_/g, ' ')}
               {isAdmin && (
                 <>
-                  <ChevronDown 
+<ChevronDown 
                     size={14} 
-                    className="ml-1" 
+                    className="ml-1 text-blue-200" 
                     onClick={(e) => {
                       e.stopPropagation();
                       setOpenDropdownId(openDropdownId === project.id ? null : project.id);
                     }}
                   />
-                  {openDropdownId === project.id && (<div className="absolute right-0 mt-1 w-40 bg-white rounded-md shadow-lg z-10 border border-gray-200">
+                  {openDropdownId === project.id && (
+                    <div className="absolute right-0 mt-2 w-48 bg-blue-900/95 backdrop-blur-sm rounded-lg shadow-xl z-10 border border-blue-700/50 overflow-hidden">
                       <div className="py-1">
-                      {statusOptions.map((option) => (
-                      <button
-                        key={option.value}
-                        type="button"
-                        className={cn(
-                          'w-full text-left px-4 py-2 text-sm flex items-center justify-between',
-                          'hover:bg-gray-50',
-                          project.status === option.value ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
-                        )}
-                        onClick={() => {
-                          setOpenDropdownId(null); // close dropdown
-                          handleStatusChange(option.value);
-                        }}
-                      >
-                        {option.label}
-                        {project.status === option.value && <Check size={16} />}
-                      </button>
-                      ))}
-
+                        {statusOptions.map((option) => {
+                          const optionConfig = getStatusConfig(option.value);
+                          return (
+                            <button
+                              key={option.value}
+                              type="button"
+                              className={cn(
+                                'w-full text-left px-4 py-2.5 text-sm flex items-center justify-between',
+                                'hover:bg-blue-800/80 transition-colors',
+                                'text-blue-100',
+                                project.status === option.value && 'bg-blue-700/50 text-white'
+                              )}
+                              onClick={() => {
+                                setOpenDropdownId(null);
+                                handleStatusChange(option.value);
+                              }}
+                            >
+                              <div className="flex items-center">
+                                <span className={optionConfig.dot.replace('mr-1.5', 'mr-2')}></span>
+                                {option.label}
+                              </div>
+                              {project.status === option.value && <Check size={14} className="text-blue-300" />}
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
                   )}
@@ -427,7 +446,7 @@ export default function ProjectCard({
         </div>
 
         {/* Description */}
-        <p className="text-gray-600 mb-5 text-sm leading-relaxed line-clamp-3">
+        <p className="text-blue-200/80 mb-5 text-sm leading-relaxed line-clamp-3">
           {project.description}
         </p>
 
@@ -435,10 +454,14 @@ export default function ProjectCard({
         {/* Deliverables Upload */}
 
         {canUploadDeliverables && isAdmin && (
-  <div className="mt-4">
-    <Button onClick={() => setShowDeliverableModal(true)} className="w-full">
-      Upload Deliverables
-    </Button>
+          <div className="mt-4">
+            <Button 
+              onClick={() => setShowDeliverableModal(true)} 
+              className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white border-0 shadow-md hover:shadow-cyan-500/20 transition-all"
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              Upload Deliverables
+            </Button>
 
     <DeliverablesUploadModal
     projectId={project.id}
@@ -449,12 +472,12 @@ export default function ProjectCard({
 )}
 
         {/* Payment Details Button */}
-        <div className="mt-4 space-y-2">
+        <div className="mt-4 space-y-3 bg-blue-900/40 p-4 rounded-lg border border-blue-700/50 backdrop-blur-sm shadow-inner">
           {project.paymentProof && (
             <Button
               variant="outline"
               size="sm"
-              className="w-full"
+              className="w-full border-blue-600/50 text-blue-200 hover:bg-blue-700/30 hover:border-blue-500/70 hover:text-white transition-colors"
               onClick={() => window.open(project.paymentProof, '_blank')}
             >
               <Download className="w-4 h-4 mr-2" />
@@ -463,20 +486,27 @@ export default function ProjectCard({
           )}
           
           {project.transactionId && (
-            <div className="text-sm p-3 bg-gray-50 rounded-md">
-              <p className="font-medium">Transaction ID:</p>
-              <div className="flex items-center gap-2 mt-1">
-                <code className="text-xs bg-gray-100 p-1 rounded">{project.transactionId}</code>
-                <button 
-                  onClick={() => {
-                    navigator.clipboard.writeText(project.transactionId || '');
-                    // You might want to add a toast notification here
-                  }}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  <Copy className="w-3.5 h-3.5" />
-                </button>
+            <div className="text-sm p-3 bg-blue-900/30 rounded-md border border-blue-800/50">
+              <p className="font-medium text-blue-100">Transaction ID:</p>
+              <div className="flex items-center space-x-2">
+                <span className="text-xs text-blue-300/60">
+                  Last updated: {formatDate(project.updatedAt || project.createdAt)}
+                </span>
               </div>
+              {project.payment?.verifiedAt && (
+                <p className="text-xs text-blue-300/60">
+                  Paid on: {new Date(project.payment.verifiedAt).toLocaleDateString()}
+                </p>
+              )}
+              <button 
+                onClick={() => {
+                  navigator.clipboard.writeText(project.transactionId || '');
+                  // You might want to add a toast notification here
+                }} 
+                className="text-blue-300/70 hover:text-cyan-300 transition-colors"
+              >
+                <Copy className="w-3.5 h-3.5" />
+              </button>
             </div>
           )}
 
@@ -485,7 +515,7 @@ export default function ProjectCard({
               <Button
                 variant="outline"
                 size="sm"
-                className="w-full"
+                className="w-full border-blue-600/50 text-blue-200 hover:bg-blue-700/30 hover:border-blue-500/70 hover:text-white transition-colors"
                 onClick={() => setShowPaymentDialog(true)}
               >
                 <Clock className="w-4 h-4 mr-2" />
@@ -503,46 +533,61 @@ export default function ProjectCard({
         
         
         {/* Project metadata */}
-        <div className="mt-auto space-y-3">
+        <div className="mt-auto space-y-3 pt-4 border-t border-blue-800/50">
           <div className="flex items-center justify-between text-sm">
-            <div className="flex items-center text-gray-500">
-              <DollarSign size={14} className="mr-1.5 text-emerald-500" />
-              <span className="font-medium text-gray-700">${project.budget.toLocaleString()}</span>
+            <div className="flex items-center text-blue-200/90">
+              <DollarSign size={14} className="mr-1.5 text-cyan-400" />
+              <span className="font-medium">${project.budget.toLocaleString()}</span>
             </div>
             <div className={cn(
-              "flex items-center text-xs px-2 py-1 rounded",
-              isOverdue ? "bg-red-50 text-red-700" : "text-gray-500"
+              "flex items-center text-xs px-2.5 py-1 rounded-full border",
+              isOverdue 
+                ? "bg-red-500/10 text-red-300 border-red-500/30" 
+                : "text-blue-200/80 border-blue-700/50"
             )}>
-              <Calendar size={12} className="mr-1.5 text-gray-400" />
+              <Calendar size={12} className="mr-1.5 text-blue-300/80" />
               <span>Due {formatDate(project.deadline??"")}</span>
-              {isOverdue && <span className="ml-1.5 px-1.5 py-0.5 bg-red-100 text-red-700 text-[10px] font-medium rounded">Overdue</span>}
+              {isOverdue && (
+                <span className="ml-1.5 px-2 py-0.5 bg-red-500/20 text-red-200 text-[10px] font-medium rounded-full border border-red-500/30">
+                  Overdue
+                </span>
+              )}
             </div>
           </div>
           
-          <div className="flex items-center text-xs text-gray-400">
+          <div className="flex items-center text-xs text-blue-200/60">
             <Clock size={12} className="mr-1.5 flex-shrink-0" />
             <span className="truncate">Created {formatDate(project.createdAt)}</span>
           </div>
           
           {/* Contact Information */}
-          <div className="space-y-1 mt-2 pt-2 border-t border-gray-100">
+          <div className="space-y-2 mt-3 pt-3 border-t border-blue-800/50">
+            <h4 className="text-xs font-medium text-blue-200/80 uppercase tracking-wider">Contact Info</h4>
             {project.email && (
-              <div className="flex items-center text-xs text-gray-500">
-                <svg className="w-3.5 h-3.5 mr-1.5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <div className="flex items-center text-xs text-blue-200/80">
+                <svg className="w-3.5 h-3.5 mr-2 text-blue-300/70 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
-                <a href={`mailto:${project.email}`} className="truncate hover:text-blue-600 transition-colors">
+                <a 
+                  href={`mailto:${project.email}`} 
+                  className="truncate hover:text-cyan-300 transition-colors"
+                  title={project.email}
+                >
                   {project.email}
                 </a>
               </div>
             )}
            
             {project.phone && (
-              <div className="flex items-center text-xs text-gray-500">
-                <svg className="w-3.5 h-3.5 mr-1.5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <div className="flex items-center text-xs text-blue-200/80">
+                <svg className="w-3.5 h-3.5 mr-2 text-blue-300/70 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                 </svg>
-                <a href={`tel:${project.phone}`} className="hover:text-blue-600 transition-colors">
+                <a 
+                  href={`tel:${project.phone}`} 
+                  className="hover:text-cyan-300 transition-colors"
+                  title={project.phone}
+                >
                   {project.phone}
                 </a>
               </div>
@@ -550,31 +595,55 @@ export default function ProjectCard({
 
             {/* App Information */}
             {(project.aliasName || project.password || project.appLink || project.playStoreLink) && (
-              <div className="mt-4 pt-4 border-t border-gray-200 space-y-2">
-                <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider">App Information</h4>
-                {project.aliasName && <div className="text-sm"><span className="font-medium">Alias:</span> {project.aliasName}</div>}
+              <div className="mt-4 pt-4 border-t border-blue-800/50 space-y-3">
+                <h4 className="text-xs font-medium text-blue-200/80 uppercase tracking-wider">App Information</h4>
+                {project.aliasName && (
+                  <div className="text-sm text-blue-200/90">
+                    <span className="font-medium text-blue-300">Alias:</span>{' '}
+                    <span className="font-mono">{project.aliasName}</span>
+                  </div>
+                )}
                 {project.password && (
-                  <div className="flex items-center text-sm">
-                    <span className="font-medium">Password:</span>
-                    <span className="ml-2 font-mono">••••••••</span>
-                    <button onClick={() => navigator.clipboard.writeText(project.password || '')} className="ml-2 text-blue-500">
+                  <div className="flex items-center text-sm text-blue-200/90">
+                    <span className="font-medium text-blue-300">Password:</span>
+                    <span className="ml-2 font-mono bg-blue-900/50 px-2 py-0.5 rounded text-blue-100">••••••••</span>
+                    <button 
+                      onClick={() => {
+                        navigator.clipboard.writeText(project.password || '');
+                        // You might want to add a toast notification here
+                      }} 
+                      className="ml-2 text-blue-300/70 hover:text-cyan-300 transition-colors"
+                      title="Copy password"
+                    >
                       <Copy size={14} />
                     </button>
                   </div>
                 )}
                 {project.appLink && (
                   <div className="text-sm">
-                    <span className="font-medium">App:</span>{' '}
-                    <a href={project.appLink} target="_blank" rel="noopener" className="text-blue-600 hover:underline">
-                      {project.appLink.substring(0, 30)}{project.appLink.length > 30 ? '...' : ''}
+                    <span className="font-medium text-blue-300">App:</span>{' '}
+                    <a 
+                      href={project.appLink} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="text-cyan-300 hover:underline truncate inline-block max-w-[200px]"
+                      title={project.appLink}
+                    >
+                      {project.appLink.replace(/^https?:\/\//, '')}
                     </a>
                   </div>
                 )}
                 {project.playStoreLink && (
                   <div className="text-sm">
-                    <span className="font-medium">Play Store:</span>{' '}
-                    <a href={project.playStoreLink} target="_blank" rel="noopener" className="text-blue-600 hover:underline">
-                      {project.playStoreLink.substring(0, 30)}{project.playStoreLink.length > 30 ? '...' : ''}
+                    <span className="font-medium text-blue-300">Play Store:</span>{' '}
+                    <a 
+                      href={project.playStoreLink} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="text-blue-200/80 hover:underline truncate inline-block max-w-[200px]"
+                      title={project.playStoreLink}
+                    >
+                      {project.playStoreLink.replace(/^https?:\/\//, '')}
                     </a>
                   </div>
                 )}
@@ -583,13 +652,15 @@ export default function ProjectCard({
 
           </div>
           {project.status === 'PAYMENT_PROCESSING' && !isAdmin && (
-          <div className="flex items-center w-full px-5 pb-4">
-            <button 
-            onClick={() => handlePaymentClick(project)}
-            className="w-full py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-medium rounded-xl shadow-md hover:from-blue-600 hover:to-indigo-700 hover:shadow-lg transition-all duration-300">
-             User Payment
-            </button>
-          </div>
+            <div className="px-5 pb-4">
+              <button 
+                onClick={() => handlePaymentClick(project)}
+                className="w-full py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-medium rounded-lg shadow-md hover:from-cyan-400 hover:to-blue-500 hover:shadow-cyan-500/20 transition-all duration-300 flex items-center justify-center gap-2"
+              >
+                <CreditCard size={16} />
+                Make Payment
+              </button>
+            </div>
           )}
           {selectedProject && (
             <PaymentDialog
@@ -606,12 +677,12 @@ export default function ProjectCard({
       {/* Attachments */}
       {project.attachments && project.attachments.length > 0 && (
         <div className="px-5 pb-5">
-          <h4 className="text-sm font-medium text-gray-500 mb-2">Attachments ({project.attachments.length})</h4>
+          <h4 className="text-sm font-medium text-blue-200/80 mb-3 uppercase tracking-wider">Attachments ({project.attachments.length})</h4>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {project.attachments.map((url, index) => (
               <div 
                 key={index} 
-                className="group relative rounded-lg overflow-hidden border border-gray-200 bg-gray-50 hover:shadow-md transition-all duration-200 cursor-pointer"
+                className="group relative rounded-lg overflow-hidden border border-blue-800/50 bg-blue-900/30 hover:border-blue-600/50 hover:shadow-lg hover:shadow-blue-500/5 transition-all duration-200 cursor-pointer"
                 onClick={() => handleImageClick(index)}
               >
                 <div className="aspect-square overflow-hidden">
@@ -621,8 +692,8 @@ export default function ProjectCard({
                     className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                   />
                 </div>
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
-                  <div className="bg-white/90 rounded-full p-2 text-gray-800 transform group-hover:scale-110 transition-transform">
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
+                  <div className="bg-blue-500/90 rounded-full p-2 text-white transform group-hover:scale-110 transition-transform">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <circle cx="12" cy="12" r="10"></circle>
                       <polyline points="15 9 12 12 9 9"></polyline>
