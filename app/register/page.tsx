@@ -6,7 +6,8 @@ import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { auth, db } from '@/app/firebase/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiUser, FiMail, FiLock, FiCheck, FiAlertCircle, FiEye, FiEyeOff } from 'react-icons/fi';
+import { FiUser, FiMail, FiLock, FiCheck, FiAlertCircle, FiEye, FiEyeOff, FiLogIn } from 'react-icons/fi';
+import Link from 'next/link';
 import GoogleLoginButton from '@/components/GoogleLoginButton';
 
 function getAuthErrorMessage(code: string): string {
@@ -103,26 +104,32 @@ export default function RegisterForm() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 to-blue-950 flex items-center justify-center p-4">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md bg-blue-900/30 backdrop-blur-sm rounded-2xl shadow-xl border border-blue-700/50 p-8"
-      >
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-white mb-2">Create an account</h1>
-          <p className="text-blue-200/80">Join us today!</p>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      {/* Animated background elements */}
+      <div className="fixed inset-0 overflow-hidden">
+        <div className="absolute top-1/4 -left-4 w-72 h-72 bg-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-float"></div>
+        <div className="absolute top-1/3 -right-4 w-72 h-72 bg-purple-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-float animation-delay-2000"></div>
+        <div className="absolute -bottom-8 left-20 w-72 h-72 bg-indigo-200 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-float animation-delay-4000"></div>
+      </div>
 
-        <div className="space-y-6">
-          <GoogleLoginButton />
+      <div className="relative flex min-h-screen items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
+        <div className="w-full max-w-md space-y-8 bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-200 p-8">
+          <div className="text-center">
+            <h1 className="text-3xl font-bold text-gray-900">Create an Account</h1>
+            <p className="text-gray-500 mt-2">Join us today to get started</p>
+          </div>
 
-          <div className="relative">
+          {/* Google Sign In Button */}
+          <div className="mt-6">
+            <GoogleLoginButton />
+          </div>
+
+          <div className="relative mt-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-blue-700/50"></div>
+              <div className="w-full border-t border-gray-200"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-blue-900/30 text-blue-200/70">Or continue with email</span>
+              <span className="px-3 bg-white text-gray-500">Or continue with email</span>
             </div>
           </div>
 
@@ -132,14 +139,14 @@ export default function RegisterForm() {
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
-                className="bg-red-500/10 border-l-4 border-red-400 p-4 mb-4 rounded"
+                className="bg-red-50 border-l-4 border-red-400 p-4 rounded"
               >
                 <div className="flex">
                   <div className="flex-shrink-0">
-                    <FiAlertCircle className="h-5 w-5 text-red-300" />
+                    <FiAlertCircle className="h-5 w-5 text-red-400" />
                   </div>
                   <div className="ml-3">
-                    <p className="text-sm text-red-100">{errors.form}</p>
+                    <p className="text-sm text-red-700">{errors.form}</p>
                   </div>
                 </div>
               </motion.div>
@@ -148,117 +155,141 @@ export default function RegisterForm() {
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-green-500/10 border-l-4 border-green-400 p-4 mb-4 rounded"
+                className="bg-green-50 border-l-4 border-green-400 p-4 rounded"
               >
                 <div className="flex">
                   <div className="flex-shrink-0">
-                    <FiCheck className="h-5 w-5 text-green-300" />
+                    <FiCheck className="h-5 w-5 text-green-400" />
                   </div>
                   <div className="ml-3">
-                    <p className="text-sm text-green-100">{success}</p>
+                    <p className="text-sm text-green-700">{success}</p>
                   </div>
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="mt-6 space-y-5">
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-blue-100 mb-1">Full Name</label>
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                Full Name
+              </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FiUser className="h-5 w-5 text-blue-400/80" />
+                  <FiUser className="h-5 w-5 text-gray-400" />
                 </div>
                 <input
                   id="name"
                   name="name"
                   type="text"
-                  placeholder="John Doe"
+                  autoComplete="name"
+                  required
                   value={formData.name}
                   onChange={handleChange}
-                  className={`block w-full pl-10 pr-3 py-2.5 bg-blue-900/50 border ${errors.name ? 'border-red-400/50' : 'border-blue-700/50'} rounded-lg shadow-sm text-white placeholder-blue-400/70 focus:border-blue-400 focus:ring-1 focus:ring-blue-500/50 focus:outline-none transition-colors`}
+                  className="block w-full rounded-lg border border-gray-300 bg-white text-gray-900 placeholder-gray-400 pl-10 pr-4 py-3 shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none transition-colors"
+                  placeholder="Enter your full name"
                 />
               </div>
-              {errors.name && <p className="mt-1 text-sm text-red-300">{errors.name}</p>}
+              {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
             </div>
 
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-blue-100 mb-1">Email Address</label>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                Email address
+              </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FiMail className="h-5 w-5 text-blue-400/80" />
+                  <FiMail className="h-5 w-5 text-gray-400" />
                 </div>
                 <input
                   id="email"
                   name="email"
                   type="email"
-                  placeholder="you@example.com"
+                  autoComplete="email"
+                  required
                   value={formData.email}
                   onChange={handleChange}
-                  className={`block w-full pl-10 pr-3 py-2.5 bg-blue-900/50 border ${errors.email ? 'border-red-400/50' : 'border-blue-700/50'} rounded-lg shadow-sm text-white placeholder-blue-400/70 focus:border-blue-400 focus:ring-1 focus:ring-blue-500/50 focus:outline-none transition-colors`}
+                  className="block w-full rounded-lg border border-gray-300 bg-white text-gray-900 placeholder-gray-400 pl-10 pr-4 py-3 shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none transition-colors"
+                  placeholder="Enter your email"
                 />
               </div>
-              {errors.email && <p className="mt-1 text-sm text-red-300">{errors.email}</p>}
+              {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-blue-100 mb-1">Password</label>
-              <div className="relative">
+              <div className="flex items-center justify-between">
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                  Password
+                </label>
+              </div>
+              <div className="relative mt-1">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FiLock className="h-5 w-5 text-blue-400/80" />
+                  <FiLock className="h-5 w-5 text-gray-400" />
                 </div>
                 <input
                   id="password"
                   name="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="••••••••"
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="new-password"
+                  required
                   value={formData.password}
                   onChange={handleChange}
-                  className={`block w-full pl-10 pr-10 py-2.5 bg-blue-900/50 border ${errors.password ? 'border-red-400/50' : 'border-blue-700/50'} rounded-lg shadow-sm text-white placeholder-blue-400/70 focus:border-blue-400 focus:ring-1 focus:ring-blue-500/50 focus:outline-none transition-colors`}
+                  className="block w-full rounded-lg border border-gray-300 bg-white text-gray-900 placeholder-gray-400 pl-10 pr-10 py-3 shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none transition-colors"
+                  placeholder="Create a password"
                 />
                 <button
                   type="button"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-blue-400/70 hover:text-blue-300 transition-colors"
                 >
-                  {showPassword ? <FiEyeOff className="h-5 w-5" /> : <FiEye className="h-5 w-5" />}
+                  {showPassword ? (
+                    <FiEyeOff className="h-5 w-5 text-gray-400 hover:text-gray-500" />
+                  ) : (
+                    <FiEye className="h-5 w-5 text-gray-400 hover:text-gray-500" />
+                  )}
                 </button>
               </div>
-              {errors.password && <p className="mt-1 text-sm text-red-300">{errors.password}</p>}
+              {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password}</p>}
             </div>
 
             <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-blue-100 mb-1">
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
                 Confirm Password
               </label>
-              <div className="relative">
+              <div className="relative mt-1">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <FiLock className="h-5 w-5 text-blue-400/80" />
+                  <FiLock className="h-5 w-5 text-gray-400" />
                 </div>
                 <input
                   id="confirmPassword"
                   name="confirmPassword"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="••••••••"
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="new-password"
+                  required
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  className={`block w-full pl-10 pr-10 py-2.5 bg-blue-900/50 border ${errors.confirmPassword ? 'border-red-400/50' : 'border-blue-700/50'} rounded-lg shadow-sm text-white placeholder-blue-400/70 focus:border-blue-400 focus:ring-1 focus:ring-blue-500/50 focus:outline-none transition-colors`}
+                  className="block w-full rounded-lg border border-gray-300 bg-white text-gray-900 placeholder-gray-400 pl-10 pr-10 py-3 shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none transition-colors"
+                  placeholder="Confirm your password"
                 />
                 <button
                   type="button"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-blue-400/70 hover:text-blue-300 transition-colors"
                 >
-                  {showPassword ? <FiEyeOff className="h-5 w-5" /> : <FiEye className="h-5 w-5" />}
+                  {showPassword ? (
+                    <FiEyeOff className="h-5 w-5 text-gray-400 hover:text-gray-500" />
+                  ) : (
+                    <FiEye className="h-5 w-5 text-gray-400 hover:text-gray-500" />
+                  )}
                 </button>
               </div>
               {errors.confirmPassword && (
-                <p className="mt-1 text-sm text-red-300">{errors.confirmPassword}</p>
+                <p className="mt-1 text-sm text-red-600">{errors.confirmPassword}</p>
               )}
             </div>
 
             <div>
-              <label htmlFor="role" className="block text-sm font-medium text-blue-100 mb-1">
+              <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">
                 I am a
               </label>
               <select
@@ -266,41 +297,41 @@ export default function RegisterForm() {
                 name="role"
                 value={formData.role}
                 onChange={handleChange}
-                className="block w-full pl-3 pr-10 py-2.5 bg-blue-900/50 border border-blue-700/50 rounded-lg shadow-sm text-white focus:border-blue-400 focus:ring-1 focus:ring-blue-500/50 focus:outline-none transition-colors"
+                className="block w-full rounded-lg border border-gray-300 bg-white text-gray-900 pl-3 pr-10 py-3 shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 focus:outline-none transition-colors"
               >
                 <option value="USER">User</option>
                 <option value="DEVELOPER">Developer</option>
               </select>
             </div>
 
-            <div className="pt-2">
+            <div>
               <button
                 type="submit"
                 disabled={loading}
-                className={`group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-xl text-white bg-gradient-to-r from-cyan-500 to-blue-600 hover:shadow-lg hover:shadow-cyan-500/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-400 transition-all duration-200 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
+                className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
               >
-                {loading ? (
-                  <div className="flex items-center space-x-2">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    <span>Creating Account...</span>
-                  </div>
-                ) : (
-                  <span>Create Account</span>
-                )}
+                <span className="absolute left-0 inset-y-0 flex items-center pl-3">
+                  {loading ? (
+                    <div className="animate-spin h-5 w-5 border-2 border-indigo-300 border-t-white rounded-full"></div>
+                  ) : (
+                    <FiLogIn className="h-5 w-5 text-indigo-300 group-hover:text-indigo-200" />
+                  )}
+                </span>
+                {loading ? 'Creating account...' : 'Create Account'}
               </button>
             </div>
 
-            <div className="text-center text-sm pt-2">
-              <p className="text-blue-200/80">
+            <div className="text-center">
+              <p className="text-sm text-gray-600">
                 Already have an account?{' '}
-                <a href="/login" className="font-medium text-cyan-300 hover:text-white transition-colors">
+                <Link href="/login" className="font-medium text-indigo-600 hover:text-indigo-500">
                   Sign in
-                </a>
+                </Link>
               </p>
             </div>
           </form>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }
