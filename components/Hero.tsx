@@ -173,7 +173,7 @@ export default function Hero() {
               <div className="text-center p-8">
                 <PlayCircle className="w-16 h-16 text-[#4f8efc] mx-auto mb-4" />
                 <h3 className="text-2xl font-bold text-gray-900 mb-2">Video Coming Soon</h3>
-                <p className="text-gray-600">We're preparing an amazing video to show you how it all works!</p>
+                <p className="text-gray-600">We&apos;re preparing an amazing video to show you how it all works!</p>
               </div>
             </div>
           )}
