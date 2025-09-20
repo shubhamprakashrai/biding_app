@@ -284,7 +284,7 @@ export default function ProjectForm({ isOpen, onClose ,project, onSubmit}: Proje
                 name="aliasName"
                 value={formData.aliasName}
                 onChange={handleChange}
-                required
+                required = {false}
                 className="w-full px-4 py-3 border border-gray-300 rounded-md"
               />
             </div>
@@ -299,26 +299,26 @@ export default function ProjectForm({ isOpen, onClose ,project, onSubmit}: Proje
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
-                required
+                required = {false}
                 className="w-full px-4 py-3 border border-gray-300 rounded-md"
               />
             </div>
 
             {/* App Link */}
              <div>
-  <label htmlFor="appLink" className="block text-sm font-medium text-gray-700 mb-2">
-    App Link *
-  </label>
-  <input
-    type="url"
-    id="appLink"
-    name="appLink"
-    value={formData.appLink}
-    onChange={handleChange}
-    required
-    className="w-full px-4 py-3 border border-gray-300 rounded-md"
-    placeholder="https://yourapp.com"
-  />
+              <label htmlFor="appLink" className="block text-sm font-medium text-gray-700 mb-2">
+                App Link *
+              </label>
+              <input
+                type="url"
+                id="appLink"
+                name="appLink"
+                value={formData.appLink}
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-3 border border-gray-300 rounded-md"
+                placeholder="https://yourapp.com"
+              />
             </div>
 
           {/* Play Store Link */}

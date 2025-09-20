@@ -1,10 +1,11 @@
 import { Project } from '@/types';
-import { Calendar, DollarSign, Clock, MessageSquare, Edit2, ArrowRight, ChevronDown, Check, X, Download, CreditCard, Loader2, Copy, QrCode, CheckCircle } from 'lucide-react';
+import { Calendar, DollarSign, Clock, MessageSquare, Edit2, ArrowRight, ChevronDown, Check, X, Download, CreditCard, Loader2, Copy, QrCode, CheckCircle, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState, useRef, useEffect } from 'react';
 import { Button } from './ui/button';
 import dynamic from 'next/dynamic';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { toast } from 'sonner';
 import { db } from '@/app/firebase/firebase';
 import PaymentDialog from './PaymentDialog';
 import PaymentHistoryDialog from './PaymentHistoryDialog';
@@ -28,9 +29,6 @@ interface ImageViewerProps {
   projectTitle: string;
 }
 
-
-
-
 const ImageViewer = ({ images, initialIndex, onClose, projectTitle }: ImageViewerProps) => {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [isDownloading, setIsDownloading] = useState(false);
@@ -46,9 +44,6 @@ const ImageViewer = ({ images, initialIndex, onClose, projectTitle }: ImageViewe
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [currentIndex]);
-
-
-  
 
   const handleNext = () => {
     setCurrentIndex((prev) => (prev + 1) % images.length);
@@ -81,10 +76,6 @@ const ImageViewer = ({ images, initialIndex, onClose, projectTitle }: ImageViewe
   };
 
   if (!images.length) return null;
-
-
-
-  
 
   return (
     <div 
@@ -187,7 +178,7 @@ export default function ProjectCard({
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [showDeliverableModal, setShowDeliverableModal] = useState(false);
-
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [open, setOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
 
@@ -196,7 +187,6 @@ export default function ProjectCard({
   (project.status === "PAYMENT_COMPLETED" || 
    project.status === "PAYMENT_PROCESSING" ||
    project.status === "PAYMENT_UNDER_REVIEW");
-
 
   const handlePaymentClick = (proj: Project) => {
     setSelectedProject(proj);
@@ -222,6 +212,56 @@ export default function ProjectCard({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  const handleCancelProject = async () => {
+    console.log('handleCancelProject called');
+    if (!project?.id) {
+      const errorMsg = 'No project ID found. Cannot cancel project.';
+      console.error(errorMsg);
+      toast.error(errorMsg);
+      return;
+    }
+    
+    const loadingToast = toast.loading('Cancelling project...');
+    console.log('Attempting to cancel project:', project.id);
+    
+    try {
+      // First update the local state for immediate UI feedback
+      if (onStatusChange) {
+        onStatusChange(project.id, 'CANCELLED');
+      }
+      
+      // Then update Firestore
+      const projectRef = doc(db, 'projects', project.id);
+      console.log('Project ref created, updating document...');
+      
+      const updateData = {
+        status: 'CANCELLED',
+        updatedAt: serverTimestamp(),
+        cancelledAt: serverTimestamp(),
+        cancelledBy: 'user'
+      };
+      
+      console.log('Updating with data:', updateData);
+      await updateDoc(projectRef, updateData);
+      
+      console.log('Project cancelled successfully');
+      toast.dismiss(loadingToast);
+      toast.success('Project has been cancelled successfully');
+      
+      // Ensure the dialog is closed after successful update
+      setShowCancelConfirm(false);
+      
+      setShowCancelConfirm(false);
+    } catch (error) {
+      console.error('Error details:', {
+        error,
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
+      toast.error('Failed to cancel project. Please try again.');
+    }
+  };
 
   const handleStatusChange = async (newStatus: Project['status']) => {
     if (!project?.id) {
@@ -348,8 +388,6 @@ export default function ProjectCard({
     document.body.style.overflow = 'auto';
   };
 
- 
-
   return (
     <div className={cn(
       'group bg-white rounded-xl border border-gray-100 hover:shadow-md transition-all duration-300 overflow-hidden h-full flex flex-col',
@@ -431,76 +469,42 @@ export default function ProjectCard({
           {project.description}
         </p>
 
-
-        {/* Deliverables Upload */}
-
-        {canUploadDeliverables && isAdmin && (
-  <div className="mt-4">
-    <Button onClick={() => setShowDeliverableModal(true)} className="w-full">
-      Upload Deliverables
-    </Button>
-
-    <DeliverablesUploadModal
-    projectId={project.id}
-      open={showDeliverableModal}
-      onClose={() => setShowDeliverableModal(false)}
-    />
-  </div>
-)}
-
-        {/* Payment Details Button */}
-        <div className="mt-4 space-y-2">
-          {project.paymentProof && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full"
-              onClick={() => window.open(project.paymentProof, '_blank')}
-            >
-              <Download className="w-4 h-4 mr-2" />
-              View Payment Proof
-            </Button>
-          )}
-          
-          {project.transactionId && (
-            <div className="text-sm p-3 bg-gray-50 rounded-md">
-              <p className="font-medium">Transaction ID:</p>
-              <div className="flex items-center gap-2 mt-1">
-                <code className="text-xs bg-gray-100 p-1 rounded">{project.transactionId}</code>
-                <button 
-                  onClick={() => {
-                    navigator.clipboard.writeText(project.transactionId || '');
-                    // You might want to add a toast notification here
-                  }}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  <Copy className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-          )}
-
-          {project.payments && project.payments.length > 0 ? (
-            <div className="mt-2">
+        {/* Action Buttons */}
+        {showActions && (
+          <div className="mt-6 flex flex-col sm:flex-row gap-3">
+            {onViewMessages && (
               <Button
                 variant="outline"
-                size="sm"
-                className="w-full"
-                onClick={() => setShowPaymentDialog(true)}
+                className="flex-1"
+                onClick={() => onViewMessages(project.id)}
               >
-                <Clock className="w-4 h-4 mr-2" />
-                View Payment History
+                <MessageSquare className="w-4 h-4 mr-2" />
+                Messages
               </Button>
-              
-              <PaymentHistoryDialog
-                open={showPaymentDialog}
-                onClose={() => setShowPaymentDialog(false)}
-                payments={project.payments}
-              />
-            </div>
-          ) : null}
-        </div>
-        
+            )}
+            {onEdit && !isAdmin && projectStatus === 'PENDING' && (
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => onEdit(project)}
+              >
+                <Edit2 className="w-4 h-4 mr-2" />
+                Edit
+              </Button>
+            )}
+            {/* Cancel Project Button - Only show for non-admin users when status is PENDING */}
+            {!isAdmin && projectStatus === 'PENDING' && (
+              <Button
+                variant="destructive"
+                className="flex-1"
+                onClick={() => setShowCancelConfirm(true)}
+              >
+                <X className="w-4 h-4 mr-2" />
+                Cancel Project
+              </Button>
+            )}
+          </div>
+        )}
         
         {/* Project metadata */}
         <div className="mt-auto space-y-3">
@@ -820,6 +824,74 @@ export default function ProjectCard({
                   </Button>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cancel Project Confirmation Dialog */}
+      {showCancelConfirm && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-4"
+          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+          onClick={(e) => {
+            console.log('Dialog overlay clicked');
+            if (e.target === e.currentTarget) {
+              setShowCancelConfirm(false);
+            }
+          }}
+        >
+          <div 
+            className="bg-white rounded-xl p-6 max-w-md w-full relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setShowCancelConfirm(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+              aria-label="Close"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <div className="flex items-center justify-center mb-4">
+              <div className="bg-red-100 p-3 rounded-full">
+                <AlertTriangle className="h-8 w-8 text-red-600" />
+              </div>
+            </div>
+            <h3 className="text-lg font-medium text-center mb-2">Cancel Project</h3>
+            <p className="text-gray-600 text-center mb-6">
+              Are you sure you want to cancel this project? This action cannot be undone.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button 
+                variant="outline" 
+                onClick={(e) => {
+                  console.log('No button clicked');
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setShowCancelConfirm(false);
+                }}
+                className="flex-1"
+                type="button"
+              >
+                No, Keep Project
+              </Button>
+              <Button 
+                variant="destructive" 
+                onClick={(e) => {
+                  console.log('Yes button clicked');
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleCancelProject().catch(error => {
+                    console.error('Error in handleCancelProject:', error);
+                    toast.error('Failed to cancel project');
+                  });
+                }}
+                className="flex-1"
+                type="button"
+                autoFocus
+              >
+                Yes, Cancel Project
+              </Button>
             </div>
           </div>
         </div>
