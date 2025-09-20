@@ -247,12 +247,40 @@ export default function ProjectCard({
       
       console.log('Project cancelled successfully');
       toast.dismiss(loadingToast);
-      toast.success('Project has been cancelled successfully');
       
-      // Ensure the dialog is closed after successful update
+      // Show success message and force refresh after a short delay
+      const successToast = toast.success('Project has been cancelled successfully', {
+        duration: 2000
+      });
+      
+      // Close the dialog
       setShowCancelConfirm(false);
       
-      setShowCancelConfirm(false);
+      // Force refresh after a short delay (slightly longer than toast duration)
+      const refreshPage = () => {
+        console.log('Refreshing page...');
+        // Try different methods to ensure the page refreshes
+        try {
+          window.location.reload();
+        } catch (e) {
+          console.error('Error with location.reload():', e);
+          window.location.href = window.location.href; // Fallback 1
+        }
+      };
+      
+      // Set timeout to refresh after toast is shown
+      setTimeout(refreshPage, 2100);
+      
+      // Also try to refresh when the toast is closed
+      if (successToast) {
+        const originalOnAutoClose = successToast.props.onAutoClose;
+        successToast.props.onAutoClose = () => {
+          if (typeof originalOnAutoClose === 'function') {
+            originalOnAutoClose();
+          }
+          refreshPage();
+        };
+      }
     } catch (error) {
       console.error('Error details:', {
         error,
