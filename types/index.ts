@@ -39,6 +39,7 @@ export interface Project {
   features?: string;
   contactName: string;
   paymentQrCode?: string;
+  paymentId?: string;
   payment?: PaymentInfo;
   paymentProof?: string;
   transactionId?: string;
