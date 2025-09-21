@@ -35,7 +35,7 @@ export interface Project {
   budget: number;
   deadline?: string;
   timeline: string | number;
-  status: 'PENDING' | 'IN_PROGRESS' | 'PAYMENT_PROCESSING' | 'PAYMENT_COMPLETED' | 'PAYMENT_UNDER_REVIEW' | 'COMPLETED' | 'CANCELLED';
+  status: 'PENDING' | 'IN_PROGRESS' | 'PAYMENT_PROCESSING' | 'PAYMENT_COMPLETED' | 'PAYMENT_UNDER_REVIEW' | 'COMPLETED' | 'CANCELLED' | 'REJECTED';
   userId: string;
   createdAt: string;
   updatedAt?: any; // Firestore Timestamp or string
@@ -47,6 +47,14 @@ export interface Project {
   contactName: string;
   paymentQrCode?: string;
   paymentId?: string;
+  paymentMethod?: string;
+  paymentStatusHistory?: Array<{
+    status: 'PENDING' | 'APPROVED' | 'REJECTED';
+    timestamp: any; // Firestore Timestamp or Date
+    updatedBy: string; // 'admin' | 'user'
+    notes?: string;
+  }>;
+  paymentNotes?: string;
   payment?: PaymentInfo;
   paymentProof?: string;
   transactionId?: string;

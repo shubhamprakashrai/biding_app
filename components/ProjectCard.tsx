@@ -1,16 +1,17 @@
 import { Project } from '@/types';
-import { Calendar, DollarSign, Clock, MessageSquare, Edit2, ArrowRight, ChevronDown, Check, X, Download, CreditCard, Loader2, Copy, QrCode, CheckCircle, AlertTriangle, Upload } from 'lucide-react';
+import { Calendar, DollarSign, Clock, MessageSquare, Edit2, ArrowRight, ChevronDown, Check, X, Download, CreditCard, Loader2, Copy, QrCode, CheckCircle, AlertTriangle, Upload, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState, useRef, useEffect } from 'react';
 import { Button } from './ui/button';
 import dynamic from 'next/dynamic';
-import { doc, updateDoc, serverTimestamp, getDoc } from 'firebase/firestore';
+import { doc, updateDoc, serverTimestamp, getDoc, Timestamp, FieldValue } from 'firebase/firestore';
 import { toast } from 'sonner';
 import { db } from '@/app/firebase/firebase';
 import PaymentDialog from './PaymentDialog';
 import PaymentHistoryDialog from './PaymentHistoryDialog';
 import DeliverablesUploadModal from './DeliverablesUpload';
 import DeliverablesViewer from './DeliverablesViewer';
+import { PaymentDetails, PaymentDetailsDialog, PaymentStatusHistory } from './PaymentDetailsDialog';
 
 // Dynamically import QrCodeSelector to avoid SSR issues with Firestore
 const QrCodeSelector = dynamic(() => import('./QrCodeSelector'), {
@@ -145,7 +146,7 @@ interface ProjectCardProps {
   className?: string;
 }
 
-const statusOptions: { value: Project['status']; label: string }[] = [
+const allStatusOptions: { value: Project['status']; label: string }[] = [
   { value: 'PENDING', label: 'Pending' },
   { value: 'IN_PROGRESS', label: 'In Progress' },
   { value: 'PAYMENT_PROCESSING', label: 'Payment Processing' },
@@ -154,6 +155,17 @@ const statusOptions: { value: Project['status']; label: string }[] = [
   { value: 'COMPLETED', label: 'Completed' },
   { value: 'CANCELLED', label: 'Cancelled' }
 ];
+
+// Filter status options based on user role
+const getStatusOptions = (isAdmin: boolean) => {
+  if (isAdmin) {
+    return allStatusOptions;
+  }
+  // For normal users, only show specific status options
+  return allStatusOptions.filter(option => 
+    ['PAYMENT_UNDER_REVIEW', 'CANCELLED', 'PAYMENT_PROCESSING'].includes(option.value)
+  );
+};
 
 export default function ProjectCard({ 
   project, 
@@ -168,15 +180,16 @@ export default function ProjectCard({
   const [paymentId, setPaymentId] = useState<string>("");
 
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
-  // const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [selectedQrCode, setSelectedQrCode] = useState<string | null>(project.paymentQrCode || null);
-  const [showQrError, setShowQrError] = useState(false);
-  const [showPaymentDetails, setShowPaymentDetails] = useState(false);
   const [showQrCodeSelector, setShowQrCodeSelector] = useState(false);
+  const [showQrError, setShowQrError] = useState(false);
+  const [paymentDetails, setPaymentDetails] = useState<PaymentDetails | null>(null);
+  const [showPaymentHistory, setShowPaymentHistory] = useState(false);
+  const [showPaymentDetails, setShowPaymentDetails] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [showDeliverableModal, setShowDeliverableModal] = useState(false);
@@ -314,6 +327,16 @@ export default function ProjectCard({
       console.error("Project ID missing for status change");
       return;
     }
+
+    // For normal users, only allow specific status changes
+    if (!isAdmin && !['PAYMENT_UNDER_REVIEW', 'CANCELLED', 'PAYMENT_PROCESSING'].includes(newStatus)) {
+      console.error("Unauthorized status change attempt by normal user");
+      toast.error("You don't have permission to perform this action.");
+      return;
+    }
+    
+    // For normal users, refresh the page after status change
+    const shouldRefresh = !isAdmin;
   
     // For PAYMENT_PROCESSING, ensure we have a QR code
     if (newStatus === 'PAYMENT_PROCESSING') {
@@ -337,6 +360,11 @@ export default function ProjectCard({
           // Update local state and call the callback
           onStatusChange?.(project.id, 'PAYMENT_PROCESSING');
           setShowQrError(false);
+          
+          // Refresh the page for normal users
+          if (shouldRefresh) {
+            window.location.reload();
+          }
           return; // Exit early after handling payment processing
         } catch (error) {
           console.error('Error updating QR code:', error);
@@ -351,10 +379,13 @@ export default function ProjectCard({
             updatedAt: serverTimestamp()
           });
           onStatusChange?.(project.id, 'PAYMENT_PROCESSING');
-          return;
+          setShowQrError(false);
+          if (shouldRefresh) {
+            window.location.reload();
+          }
         } catch (error) {
-          console.error('Error updating project status:', error);
-          return;
+          console.error('Error updating status:', error);
+          toast.error('Failed to update status. Please try again.');
         }
       }
     }
@@ -368,8 +399,116 @@ export default function ProjectCard({
       });
       onStatusChange?.(project.id, newStatus);
       setShowQrError(false);
+      toast.success(`Status updated to ${newStatus.replace(/_/g, ' ')}`);
+      if (shouldRefresh) {
+        window.location.reload();
+      }
     } catch (error) {
-      console.error('Error updating project status:', error);
+      console.error('Error updating status:', error);
+      toast.error('Failed to update status. Please try again.');
+    }
+  };
+  
+
+  const handleSavePaymentDetails = async (details: Omit<PaymentDetails, 'timestamp' | 'status'>) => {
+    if (!project?.id) {
+      toast.error('Project ID is missing');
+      return;
+    }
+    
+    try {
+      const projectRef = doc(db, 'projects', project.id);
+      const now = new Date();
+      const initialStatus = 'PENDING' as const;
+      
+      // First update the document with the payment details and a placeholder for statusHistory
+      await updateDoc(projectRef, {
+        'paymentDetails.screenshot': details.screenshot,
+        'paymentDetails.amount': details.amount,
+        'paymentDetails.transactionId': details.transactionId,
+        'paymentDetails.notes': details.notes,
+        'paymentDetails.status': initialStatus,
+        'paymentDetails.timestamp': serverTimestamp(),
+        status: 'PAYMENT_UNDER_REVIEW',
+        updatedAt: serverTimestamp()
+      });
+      
+      // Then update the statusHistory separately
+      const statusEntry = {
+        status: initialStatus,
+        timestamp: serverTimestamp(),
+        updatedBy: 'user',
+        notes: 'Payment details submitted'
+      };
+      
+      // Add the status history using arrayUnion
+      await updateDoc(projectRef, {
+        'paymentDetails.statusHistory': [statusEntry]
+      });
+      
+      // Update local state with client-side timestamps
+      const paymentDetails: PaymentDetails = {
+        ...details,
+        timestamp: now,
+        status: initialStatus,
+        statusHistory: [{
+          ...statusEntry,
+          timestamp: now
+        }]
+      };
+      
+      setPaymentDetails(paymentDetails);
+      onStatusChange?.(project.id, 'PAYMENT_UNDER_REVIEW');
+      toast.success('Payment details submitted successfully! Your payment is under review.', {
+        description: 'We will notify you once your payment is verified.',
+        duration: 5000,
+      });
+    } catch (error) {
+      console.error('Error saving payment details:', error);
+      toast.error('Failed to save payment details');
+    }
+  };
+
+  const handlePaymentStatusChange = async (status: 'APPROVED' | 'REJECTED', adminNotes: string = '') => {
+    if (!project?.id || !paymentDetails) return;
+    
+    try {
+      const projectRef = doc(db, 'projects', project.id);
+      const newStatus = status === 'APPROVED' ? 'PAYMENT_COMPLETED' : 'PAYMENT_PROCESSING';
+      const statusUpdate = {
+        status,
+        timestamp: serverTimestamp(),
+        updatedBy: 'admin',
+        notes: adminNotes || `Payment ${status.toLowerCase()} by admin`
+      };
+      
+      await updateDoc(projectRef, {
+        'paymentDetails.status': status,
+        'paymentDetails.statusHistory': [...(paymentDetails.statusHistory || []), statusUpdate],
+        'paymentDetails.adminNotes': adminNotes || null,
+        status: newStatus,
+        updatedAt: serverTimestamp(),
+      });
+      
+      // Update local state
+      setPaymentDetails({
+        ...paymentDetails,
+        status,
+        adminNotes: adminNotes || paymentDetails.adminNotes,
+        statusHistory: [
+          ...(paymentDetails.statusHistory || []),
+          {
+            ...statusUpdate,
+            timestamp: new Date() // Use client-side timestamp for local state
+          }
+        ]
+      });
+      
+      onStatusChange?.(project.id, newStatus);
+      toast.success(`Payment ${status.toLowerCase()}`);
+    } catch (error) {
+      console.error('Error updating payment status:', error);
+      toast.error(`Failed to ${status.toLowerCase()} payment`);
     }
   };
   
@@ -462,27 +601,27 @@ export default function ProjectCard({
               </div>
             )}
           </div>
-          <div className="flex items-center">
+          <div className="flex items-center relative">
             <div className={cn(
               statusConfig.className,
               'inline-flex items-center',
-              isAdmin && 'cursor-pointer hover:bg-opacity-90 transition-all'
+              'cursor-pointer hover:bg-opacity-90 transition-all',
+              'relative' // Add relative positioning to contain the dropdown
             )}>
               {statusConfig.icon}
               {String(project?.status || 'PENDING').replace(/_/g, ' ')}
-              {isAdmin && (
-                <>
-                  <ChevronDown 
-                    size={14} 
-                    className="ml-1" 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setOpenDropdownId(openDropdownId === project.id ? null : project.id);
-                    }}
-                  />
-                  {openDropdownId === project.id && (<div className="absolute right-0 mt-1 w-40 bg-white rounded-md shadow-lg z-10 border border-gray-200">
-                      <div className="py-1">
-                      {statusOptions.map((option) => (
+              <ChevronDown 
+                size={14} 
+                className="ml-1" 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setOpenDropdownId(openDropdownId === project.id ? null : project.id);
+                }}
+              />
+              {openDropdownId === project.id && (
+                <div className="absolute left-0 top-full mt-1 w-40 bg-white rounded-md shadow-lg z-10 border border-gray-200">
+                  <div className="py-1">
+                    {getStatusOptions(isAdmin).map((option) => (
                       <button
                         key={option.value}
                         type="button"
@@ -499,12 +638,9 @@ export default function ProjectCard({
                         {option.label}
                         {project.status === option.value && <Check size={16} />}
                       </button>
-                      ))}
-
-                      </div>
-                    </div>
-                  )}
-                </>
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
           </div>
@@ -515,32 +651,160 @@ export default function ProjectCard({
           {project.description}
         </p>
 
-        {/* Payment ID */}
-        {paymentId && (
-          <div className="flex items-center text-xs text-gray-500">
-            <CreditCard size={12} className="mr-1.5 text-gray-400" />
-            <span>
-              Payment ID: <span className="font-mono">{paymentId}</span>
-            </span>
-            <button
-              onClick={() => navigator.clipboard.writeText(paymentId)}
-              className="ml-2 text-blue-500"
-            >
-              <Copy size={14} />
-            </button>
+        {/* Payment Details */}
+        {(paymentId || paymentDetails) && (
+          <div className="mt-3 space-y-2">
+            {paymentId && (
+              <div className="flex items-center text-xs text-gray-500">
+                <CreditCard size={12} className="mr-1.5 text-gray-400 flex-shrink-0" />
+                <span>
+                  Payment ID: <span className="font-mono">{paymentId}</span>
+                </span>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(paymentId);
+                    toast.success('Payment ID copied to clipboard');
+                  }}
+                  className="ml-1.5 text-gray-400 hover:text-gray-600"
+                  title="Copy to clipboard"
+                >
+                  <Copy size={12} />
+                </button>
+              </div>
+            )}
+            
+            {paymentDetails && (
+              <div className="mt-2 w-full space-y-2">
+                {/* Payment Status Badge */}
+                <div className="flex items-center gap-2">
+                  {paymentDetails.status === 'PENDING' && (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                      Payment Pending Review
+                    </span>
+                  )}
+                  {paymentDetails.status === 'REJECTED' && (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                      Payment Rejected
+                    </span>
+                  )}
+                  {paymentDetails.status === 'APPROVED' && (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      Payment Approved
+                    </span>
+                  )}
+                </div>
+                
+                {/* View Payment Details Button - Always visible for admins when payment exists */}
+                {isAdmin && (
+                  <div className="flex items-center gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="flex items-center gap-1 text-sm"
+                      onClick={() => setShowPaymentDetails(true)}
+                    >
+                      <CreditCard className="h-4 w-4" />
+                      View Payment Details
+                    </Button>
+                    
+                    {/* Payment History Button */}
+                    {paymentDetails.statusHistory && paymentDetails.statusHistory.length > 0 && (
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-sm text-blue-600 hover:text-blue-700"
+                        onClick={() => setShowPaymentHistory(true)}
+                      >
+                        View History
+                      </Button>
+                    )}
+                  </div>
+                )}
+                
+                {/* Payment Details Dialog */}
+                <PaymentDetailsDialog
+                  projectId={project.id}
+                  isAdmin={isAdmin}
+                  onSave={handleSavePaymentDetails}
+                  onStatusChange={isAdmin ? handlePaymentStatusChange : undefined}
+                  initialData={paymentDetails || undefined}
+                  isOpen={showPaymentDetails}
+                  onOpenChange={setShowPaymentDetails}
+                />
+              </div>
+            )}
+            
+            {/* Show Add Payment button for non-admin users when in payment processing state */}
+            {!isAdmin && ['PAYMENT_UNDER_REVIEW', 'PAYMENT_PROCESSING', 'PAYMENT_COMPLETED'].includes(project.status) && !paymentDetails && (
+              <div className="mt-2">
+                <PaymentDetailsDialog
+                  projectId={project.id}
+                  isAdmin={false}
+                  onSave={handleSavePaymentDetails}
+                  initialData={paymentDetails || undefined}
+                  isOpen={showPaymentDetails}
+                  onOpenChange={setShowPaymentDetails}
+                />
+                
+              </div>
+            )}
+            
+            {/* Payment status badges for non-admin users */}
+            {!isAdmin && paymentDetails?.status === 'PENDING' && (
+              <div className="mt-2">
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                  Payment Submitted - Under Review
+                </span>
+              </div>
+            )}
+            
+            {!isAdmin && paymentDetails?.status === 'REJECTED' && (
+              <div className="mt-2">
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                  Payment Rejected - Please update your payment details
+                </span>
+              </div>
+            )}
+            
+            {!isAdmin && paymentDetails?.status === 'APPROVED' && (
+              <div className="mt-2">
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                  Payment Approved
+                </span>
+              </div>
+            )}
           </div>
         )}
+        
+        {/* Status and Actions */}
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+          {paymentId && (
+            <div className="flex items-center">
+              Payment ID: <span className="font-mono ml-1">{paymentId}</span>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(paymentId);
+                  toast.success('Payment ID copied to clipboard');
+                }}
+                className="ml-2 text-blue-500 hover:text-blue-700"
+                aria-label="Copy payment ID"
+              >
+                <Copy size={14} />
+              </button>
+            </div>
+          )}
+        </div>
 
         {/* Deliverables Viewer - Show for users in payment processing or completed states */}
         {!isAdmin && project.deliverables && project.deliverables.length > 0 && (
-  <div className="mt-3">
-    <DeliverablesViewer 
-      deliverables={project.deliverables}
-      isAdmin={isAdmin}
-      paymentStatus={project.status} // Pass the payment status
-    />
-  </div>
-)}
+          <div className="mt-3">
+            <DeliverablesViewer 
+              deliverables={project.deliverables}
+              isAdmin={isAdmin}
+              paymentStatus={project.status} // Pass the payment status
+            />
+          </div>
+        )}
 
 
         {/* Action Buttons */}
@@ -580,21 +844,146 @@ export default function ProjectCard({
           </div>
         )}
 
-{isAdmin && project.status !== 'CANCELLED' && project.status !== 'PENDING' && (
-  <div className="mt-4">
-    <Button  
-      onClick={() => setShowDeliverableModal(true)} 
-      className="w-full bg-blue-500 hover:bg-blue-600"
-      variant="outline"
-    >
-      <Upload className="mr-2 h-4 w-4 text-white" />
-       <span className="text-white">Upload Deliverables</span>
-    </Button>
+{project.status !== 'CANCELLED' && project.status !== 'PENDING' && (
+  <div className="mt-4 space-y-2">
+    {isAdmin ? (
+      // Admin view - Show deliverables upload and payment details
+      <>
+        <div className="flex gap-2">
+          <Button  
+            onClick={() => setShowDeliverableModal(true)} 
+            className="flex-1 bg-blue-500 hover:bg-blue-600"
+            variant="outline"
+          >
+            <Upload className="mr-2 h-4 w-4 text-white" />
+            <span className="text-white">Upload Deliverables</span>
+          </Button>
+          
+          <Button
+            onClick={() => setShowPaymentDetails(true)}
+            variant="outline"
+            className="flex-1 bg-emerald-500 hover:bg-emerald-600"
+          >
+            <CreditCard className="mr-2 h-4 w-4 text-white" />
+            <span className="text-white">Payment Details</span>
+          </Button>
+        </div>
 
-    <DeliverablesUploadModal
+        <DeliverablesUploadModal
+          projectId={project.id}
+          open={showDeliverableModal}
+          onClose={() => setShowDeliverableModal(false)}
+        />
+      </>
+    ) : (
+      // Normal user view - Show payment upload if needed
+      project.status === 'PAYMENT_PROCESSING' && (
+        <Button
+          onClick={() => setShowPaymentDetails(true)}
+          variant="outline"
+          className="w-full bg-emerald-500 hover:bg-emerald-600"
+        >
+          <CreditCard className="mr-2 h-4 w-4 text-white" />
+          <span className="text-white">Upload Payment Details</span>
+        </Button>
+      )
+    )}
+    
+    {/* Payment Details Dialog */}
+    <PaymentDetailsDialog
+      isOpen={showPaymentDetails}
+      onOpenChange={setShowPaymentDetails}
       projectId={project.id}
-      open={showDeliverableModal}
-      onClose={() => setShowDeliverableModal(false)}
+      isAdmin={isAdmin}
+      initialData={{
+        screenshot: project.paymentProof || '',
+        amount: project.budget,
+        transactionId: project.transactionId || '',
+        notes: project.paymentNotes || '',
+        // Map project status to payment status
+        status: (() => {
+          switch(project.status) {
+            case 'PAYMENT_COMPLETED':
+              return 'APPROVED';
+            case 'REJECTED':
+              return 'REJECTED';
+            case 'PAYMENT_PROCESSING':
+            case 'PAYMENT_UNDER_REVIEW':
+              return 'PENDING';
+            default:
+              return 'PENDING';
+          }
+        })(),
+        statusHistory: project.paymentStatusHistory || []
+      }}
+      onSave={async (paymentData) => {
+        try {
+          const projectRef = doc(db, 'projects', project.id);
+          const paymentStatusHistory = project.paymentStatusHistory || [];
+          
+          // Add new status entry
+          const newStatusEntry: PaymentStatusHistory = {
+            status: 'PENDING',
+            timestamp: new Date(),
+            updatedBy: 'user',
+            notes: 'Payment details submitted by user'
+          };
+          
+          await updateDoc(projectRef, {
+            paymentProof: paymentData.screenshot,
+            transactionId: paymentData.transactionId,
+            paymentNotes: paymentData.notes,
+            status: 'PAYMENT_UNDER_REVIEW',
+            paymentStatusHistory: [...paymentStatusHistory, newStatusEntry],
+            updatedAt: serverTimestamp()
+          });
+          
+          if (onStatusChange) {
+            onStatusChange(project.id, 'PAYMENT_UNDER_REVIEW');
+          }
+          
+          toast.success('Payment details submitted for review');
+          return true;
+        } catch (error) {
+          console.error('Error saving payment details:', error);
+          toast.error('Failed to save payment details');
+          return false;
+        }
+      }}
+      onStatusChange={async (status, notes) => {
+        if (!isAdmin) return false;
+        
+        try {
+          const projectRef = doc(db, 'projects', project.id);
+          const newStatus = status === 'APPROVED' ? 'PAYMENT_COMPLETED' : 'CANCELLED';
+          
+          // Add to status history
+          const newStatusEntry: PaymentStatusHistory = {
+            status,
+            timestamp: new Date(),
+            updatedBy: 'admin',
+            notes: notes || `Payment ${status.toLowerCase()} by admin`
+          };
+          
+          await updateDoc(projectRef, {
+            status: newStatus,
+            paymentStatusHistory: [...(project.paymentStatusHistory || []), newStatusEntry],
+            paymentNotes: notes || project.paymentNotes,
+            updatedAt: serverTimestamp()
+          });
+          
+          if (onStatusChange) {
+            onStatusChange(project.id, newStatus);
+          }
+          
+          toast.success(`Payment ${status.toLowerCase()} successfully`);
+          return true;
+        } catch (error) {
+          console.error('Error updating payment status:', error);
+          toast.error('Failed to update payment status');
+          return false;
+        }
+      }}
     />
   </div>
 )}
