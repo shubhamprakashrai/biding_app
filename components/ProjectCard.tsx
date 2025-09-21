@@ -1,5 +1,5 @@
 import { Project } from '@/types';
-import { Calendar, DollarSign, Clock, MessageSquare, Edit2, ArrowRight, ChevronDown, Check, X, Download, CreditCard, Loader2, Copy, QrCode, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Calendar, DollarSign, Clock, MessageSquare, Edit2, ArrowRight, ChevronDown, Check, X, Download, CreditCard, Loader2, Copy, QrCode, CheckCircle, AlertTriangle, Upload } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState, useRef, useEffect } from 'react';
 import { Button } from './ui/button';
@@ -521,6 +521,25 @@ export default function ProjectCard({
             )}
           </div>
         )}
+
+{isAdmin && project.status !== 'CANCELLED' && project.status !== 'PENDING' && (
+  <div className="mt-4">
+    <Button  
+      onClick={() => setShowDeliverableModal(true)} 
+      className="w-full bg-blue-500 hover:bg-blue-600"
+      variant="outline"
+    >
+      <Upload className="mr-2 h-4 w-4 text-white" />
+       <span className="text-white">Upload Deliverables</span>
+    </Button>
+
+    <DeliverablesUploadModal
+      projectId={project.id}
+      open={showDeliverableModal}
+      onClose={() => setShowDeliverableModal(false)}
+    />
+  </div>
+)}
         
         {/* Project metadata */}
         <div className="mt-auto space-y-3">
@@ -666,6 +685,7 @@ export default function ProjectCard({
         />
       ))}
       
+      
       {/* QR Code Selector Modal */}
       {showQrCodeSelector && (
         <div 
@@ -706,13 +726,7 @@ export default function ProjectCard({
         </div>
       )}
 
-      {/* Show uploaded deliverables for users and admin */}
-    {project.deliverables && project.deliverables.length >= 0 && (
-  <DeliverablesViewer
-    deliverables={project.deliverables}
-    isAdmin={isAdmin}
-  />
-   )}
+    
 
       {/* Payment Modal */}
       {showPaymentDetails && (

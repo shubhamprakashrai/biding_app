@@ -17,7 +17,11 @@ interface QrUploadProps {
 export default function QrUpload({ onUploadSuccess }: QrUploadProps) {
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [currentQr, setCurrentQr] = useState({ name: '', file: null as File | null });
+  const [currentQr, setCurrentQr] = useState({ 
+    name: '', 
+    paymentId: '',
+    file: null as File | null 
+  });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -26,7 +30,7 @@ export default function QrUpload({ onUploadSuccess }: QrUploadProps) {
   };
 
   const handleAddQr = async () => {
-    if (!currentQr.file || !currentQr.name) return;
+    if (!currentQr.file || !currentQr.name || !currentQr.paymentId) return;
     setLoading(true);
 
     try {
@@ -42,7 +46,8 @@ export default function QrUpload({ onUploadSuccess }: QrUploadProps) {
         qrCodes: arrayUnion({
           id: `qr_${Date.now()}`,
           url: downloadURL,
-          name: currentQr.name
+          name: currentQr.name,
+          paymentId: currentQr.paymentId
         }),
         updatedAt: new Date().toISOString()
       }, { merge: true });
@@ -50,7 +55,7 @@ export default function QrUpload({ onUploadSuccess }: QrUploadProps) {
       alert("QR Code uploaded successfully!");
 
       // Reset state
-      setCurrentQr({ name: '', file: null });
+      setCurrentQr({ name: '', paymentId: '', file: null });
       if (fileInputRef.current) fileInputRef.current.value = '';
       setIsModalOpen(false);
       
@@ -88,6 +93,12 @@ export default function QrUpload({ onUploadSuccess }: QrUploadProps) {
                 onChange={(e) => setCurrentQr({ ...currentQr, name: e.target.value })}
                 placeholder="QR Code name"
               />
+              <Label>Payment ID</Label>
+              <Input
+                value={currentQr.paymentId}
+                onChange={(e) => setCurrentQr({ ...currentQr, paymentId: e.target.value })}
+                placeholder="Enter payment ID"
+              />
               <Input
                 type="file"
                 accept="image/*"
@@ -96,7 +107,7 @@ export default function QrUpload({ onUploadSuccess }: QrUploadProps) {
               />
               <Button
                 onClick={handleAddQr}
-                disabled={!currentQr.file || !currentQr.name || loading}
+                disabled={!currentQr.file || !currentQr.name || !currentQr.paymentId || loading}
                 className="w-full bg-indigo-600 hover:bg-indigo-700"
               >
                 {loading ? (
