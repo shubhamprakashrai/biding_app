@@ -1,3 +1,10 @@
+export interface Deliverable {
+  fileName: string;
+  type: 'apk' | 'zip' | 'code';
+  uploadedAt: any;
+  url: string;
+}
+
 export interface User {
   id: string;
   name: string;

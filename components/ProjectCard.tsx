@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 import { useState, useRef, useEffect } from 'react';
 import { Button } from './ui/button';
 import dynamic from 'next/dynamic';
-import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, updateDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { toast } from 'sonner';
 import { db } from '@/app/firebase/firebase';
 import PaymentDialog from './PaymentDialog';
@@ -165,6 +165,8 @@ export default function ProjectCard({
   className 
 }: ProjectCardProps) {
 
+  const [paymentId, setPaymentId] = useState<string>("");
+
   const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
   // const [isStatusDropdownOpen, setIsStatusDropdownOpen] = useState(false);
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
@@ -193,6 +195,31 @@ export default function ProjectCard({
     setOpen(true);
   };
 
+
+
+  useEffect(() => {
+    const fetchPaymentId = async () => {
+      if (!project.paymentQrCode) return;
+
+      try {
+        const docRef = doc(db, "adminData", "qrCodes");
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+          const qrCodes = docSnap.data().qrCodes || [];
+          const found = qrCodes.find((qr: any) => qr.id === project.paymentQrCode);
+          if (found) {
+            setPaymentId(found.paymentId || "");
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching paymentId:", err);
+      }
+    };
+
+    fetchPaymentId();
+  }, [project.paymentQrCode]);
+
   // Update selected QR code when project prop changes
   useEffect(() => {
     if (project.paymentQrCode) {
@@ -201,6 +228,9 @@ export default function ProjectCard({
   }, [project.paymentQrCode]);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const paymentModalRef = useRef<HTMLDivElement>(null);
+
+
+
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -484,6 +514,34 @@ export default function ProjectCard({
         <p className="text-gray-600 mb-5 text-sm leading-relaxed line-clamp-3">
           {project.description}
         </p>
+
+        {/* Payment ID */}
+        {paymentId && (
+          <div className="flex items-center text-xs text-gray-500">
+            <CreditCard size={12} className="mr-1.5 text-gray-400" />
+            <span>
+              Payment ID: <span className="font-mono">{paymentId}</span>
+            </span>
+            <button
+              onClick={() => navigator.clipboard.writeText(paymentId)}
+              className="ml-2 text-blue-500"
+            >
+              <Copy size={14} />
+            </button>
+          </div>
+        )}
+
+        {/* Deliverables Viewer - Show for users in payment processing or completed states */}
+        {!isAdmin && project.deliverables && project.deliverables.length > 0 && (
+  <div className="mt-3">
+    <DeliverablesViewer 
+      deliverables={project.deliverables}
+      isAdmin={isAdmin}
+      paymentStatus={project.status} // Pass the payment status
+    />
+  </div>
+)}
+
 
         {/* Action Buttons */}
         {showActions && (

@@ -14,10 +14,29 @@ interface Deliverable {
 interface DeliverablesViewerProps {
   deliverables: Deliverable[];
   isAdmin?: boolean;
+  paymentStatus?: string;
 }
 
-export default function DeliverablesViewer({ deliverables, isAdmin = false }: DeliverablesViewerProps) {
+export default function DeliverablesViewer({ 
+  deliverables, 
+  isAdmin = false, 
+  paymentStatus = '' 
+}: DeliverablesViewerProps) {
   const [open, setOpen] = useState(false);
+
+  // Filter deliverables based on payment status
+  const filteredDeliverables = deliverables.filter(deliverable => {
+    // Always show APK files
+    if (deliverable.type === 'apk') return true;
+    
+    // For non-admin users, show ZIP and code only if payment is completed
+    if (!isAdmin) {
+      return paymentStatus === 'PAYMENT_COMPLETED';
+    }
+    
+    // Admin can see all files
+    return true;
+  });
 
   const handleDownload = (url: string, fileName: string) => {
     const link = document.createElement("a");
@@ -28,7 +47,7 @@ export default function DeliverablesViewer({ deliverables, isAdmin = false }: De
     link.remove();
   };
 
-  if (!deliverables || deliverables.length === 0) return null;
+  if (filteredDeliverables.length === 0) return null;
 
   return (
     <div className="mt-4">
@@ -55,7 +74,7 @@ export default function DeliverablesViewer({ deliverables, isAdmin = false }: De
             <h3 className="text-lg font-medium text-gray-900 mb-4">Deliverables</h3>
 
             <div className="space-y-3">
-              {deliverables.map((item, index) => (
+              {filteredDeliverables.map((item, index) => (
                 <div key={index} className="flex items-center justify-between border p-2 rounded">
                   <span className="capitalize">{item.type} - {item.fileName}</span>
                   <Button
