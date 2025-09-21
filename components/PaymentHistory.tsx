@@ -1,13 +1,11 @@
 "use client";
-
 import { Timestamp } from 'firebase/firestore';
 import { Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
-
 export interface PaymentStatusHistory {
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
   timestamp: Timestamp | Date;
-  updatedBy: string; // 'user' | 'admin'
+  updatedBy: string; 
   notes?: string;
 }
 
@@ -24,7 +22,7 @@ export function PaymentHistory({ history, className = '' }: PaymentHistoryProps)
       </div>
     );
   }
-
+  
   // Sort history by timestamp in descending order (newest first)
   const sortedHistory = [...history].sort((a, b) => {
     const dateA = a.timestamp instanceof Date ? a.timestamp : a.timestamp.toDate();
