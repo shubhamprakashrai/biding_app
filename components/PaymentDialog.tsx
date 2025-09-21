@@ -86,6 +86,7 @@ import { Button } from "@/components/ui/button";
 import { doc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from "@/app/firebase/firebase";
+import { Copy, Check } from "lucide-react";
 
 interface PaymentDialogProps {
   open: boolean;
@@ -97,18 +98,31 @@ interface PaymentDialogProps {
 
 export default function PaymentDialog({ open, onClose, qrId, projectId, projectName }: PaymentDialogProps) {
   const [qrValue, setQrValue] = useState<string>("");
+  const [paymentId, setPaymentId] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [uploadMode, setUploadMode] = useState<boolean>(false);
 
   const [transactionId, setTransactionId] = useState("");
   const [screenshotUrl, setScreenshotUrl] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [copied, setCopied] = useState(false);
+  
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000); // Reset after 2 seconds
+    } catch (err) {
+      console.error('Failed to copy text: ', err);
+    }
+  };
 
   useEffect(() => {
     if (open && qrId) {
       fetchQrFromFirestore(qrId);
     } else {
       setQrValue("");
+      setPaymentId("");
     }
   }, [open, qrId]);
 
@@ -123,6 +137,7 @@ export default function PaymentDialog({ open, onClose, qrId, projectId, projectN
         const found = qrCodes.find((qr: any) => qr.id === qrId);
         if (found) {
           setQrValue(found.url);
+          setPaymentId(found.paymentId || '');
         } else {
           console.error(`QR not found in array for id: ${qrId}`);
         }
@@ -193,6 +208,29 @@ export default function PaymentDialog({ open, onClose, qrId, projectId, projectN
               <p className="text-sm text-gray-600 text-center">
                 Scan this QR code with any UPI / Payment app to complete your payment.
               </p>
+              {paymentId && (
+                <div className="mt-2 w-full max-w-xs">
+                  <p className="text-xs text-gray-500 mb-1 text-left">Payment ID:</p>
+                  <div className="flex items-center justify-between bg-gray-100 rounded-lg p-2">
+                    <p className="font-mono text-sm font-medium flex-1 truncate pr-2">
+                      {paymentId}
+                    </p>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-8 w-8 p-0 hover:bg-gray-200"
+                      onClick={() => copyToClipboard(paymentId)}
+                      title="Copy to clipboard"
+                    >
+                      {copied ? (
+                        <Check className="h-4 w-4 text-green-500" />
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              )}
             </>
           ) : (
             <p className="text-sm text-red-500">QR not available</p>

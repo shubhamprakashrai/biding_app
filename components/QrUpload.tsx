@@ -47,7 +47,8 @@ export default function QrUpload({ onUploadSuccess }: QrUploadProps) {
           id: `qr_${Date.now()}`,
           url: downloadURL,
           name: currentQr.name,
-          paymentId: currentQr.paymentId
+          paymentId: currentQr.paymentId,
+          createdAt: new Date().toISOString()
         }),
         updatedAt: new Date().toISOString()
       }, { merge: true });
@@ -97,7 +98,7 @@ export default function QrUpload({ onUploadSuccess }: QrUploadProps) {
               <Input
                 value={currentQr.paymentId}
                 onChange={(e) => setCurrentQr({ ...currentQr, paymentId: e.target.value })}
-                placeholder="Enter payment ID"
+                placeholder="e.g., yourname@upi or UPI ID"
               />
               <Input
                 type="file"
