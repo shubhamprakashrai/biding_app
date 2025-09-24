@@ -231,29 +231,6 @@ export function PaymentDetailsDialog({
               </div>
             )}
 
-            {/* Admin Notes */}
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <h3 className="text-sm font-medium">Admin Notes</h3>
-                {initialData?.adminNotes && (
-                  <span className="text-xs text-gray-500">
-                    {initialData.timestamp && (
-                      `Last updated: ${new Date(
-                        initialData.timestamp instanceof Date ? 
-                        initialData.timestamp : 
-                        initialData.timestamp.toDate()
-                      ).toLocaleString()}`
-                    )}
-                  </span>
-                )}
-              </div>
-              <textarea
-                className="w-full p-2 border border-gray-300 rounded-md text-sm min-h-[80px]"
-                placeholder="Add internal notes about this payment..."
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-              />
-            </div>
 
             {/* Status History */}
             {initialData?.statusHistory && initialData.statusHistory.length > 0 && (
@@ -290,35 +267,17 @@ export function PaymentDetailsDialog({
               </div>
             )}
 
-            {/* Action Buttons */}
-            {onStatusChange && (
-              <div className="flex gap-3 pt-2">
-                <Button 
-                  type="button"
-                  variant="outline"
-                  onClick={() => setOpen(false)}
-                  className="flex-1"
-                >
-                  Close
-                </Button>
-                <Button 
-                  type="button"
-                  variant="outline" 
-                  onClick={() => onStatusChange('APPROVED', notes)}
-                  className="flex-1 text-green-600 border-green-200 hover:bg-green-50"
-                >
-                  Approve Payment
-                </Button>
-                <Button 
-                  type="button"
-                  variant="outline"
-                  onClick={() => onStatusChange('REJECTED', notes)}
-                  className="flex-1 text-red-600 border-red-200 hover:bg-red-50"
-                >
-                  Reject Payment
-                </Button>
-              </div>
-            )}
+            {/* Close Button */}
+            <div className="flex justify-end pt-2">
+              <Button 
+                type="button"
+                variant="outline"
+                onClick={() => setOpen(false)}
+                className="px-6"
+              >
+                Close
+              </Button>
+            </div>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">

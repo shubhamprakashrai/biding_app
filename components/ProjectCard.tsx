@@ -709,6 +709,10 @@ export default function ProjectCard({
                     </Button>
                   </div>
                 )}
+
+                {/* In your ProjectCard.tsx */}
+ 
+
                 
                 {/* Payment Details Dialog - Only show one at a time */}
                 <PaymentDetailsDialog
