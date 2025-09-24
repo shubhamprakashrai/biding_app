@@ -12,6 +12,7 @@ import PaymentHistoryDialog from './PaymentHistoryDialog';
 import DeliverablesUploadModal from './DeliverablesUpload';
 import DeliverablesViewer from './DeliverablesViewer';
 import { PaymentDetails, PaymentDetailsDialog, PaymentStatusHistory } from './PaymentDetailsDialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 
 // Dynamically import QrCodeSelector to avoid SSR issues with Firestore
 const QrCodeSelector = dynamic(() => import('./QrCodeSelector'), {
@@ -190,6 +191,7 @@ export default function ProjectCard({
   const [paymentDetails, setPaymentDetails] = useState<PaymentDetails | null>(null);
   const [showPaymentHistory, setShowPaymentHistory] = useState(false);
   const [showPaymentDetails, setShowPaymentDetails] = useState(false);
+  const [showPaymentPopup, setShowPaymentPopup] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [showDeliverableModal, setShowDeliverableModal] = useState(false);
@@ -694,35 +696,23 @@ export default function ProjectCard({
                   )}
                 </div>
                 
-                {/* View Payment Details Button - Always visible for admins when payment exists */}
-                {isAdmin && (
+                {/* Payment History Button - Only show if there's payment history */}
+                {isAdmin && (paymentDetails?.statusHistory?.length ?? 0) > 0 && (
                   <div className="flex items-center gap-2">
                     <Button 
-                      variant="outline" 
+                      variant="ghost" 
                       size="sm" 
-                      className="flex items-center gap-1 text-sm"
-                      onClick={() => setShowPaymentDetails(true)}
+                      className="text-sm text-blue-600 hover:text-blue-700"
+                      onClick={() => setShowPaymentHistory(true)}
                     >
-                      <CreditCard className="h-4 w-4" />
-                      View Payment Details
+                      View History
                     </Button>
-                    
-                    {/* Payment History Button */}
-                    {paymentDetails.statusHistory && paymentDetails.statusHistory.length > 0 && (
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="text-sm text-blue-600 hover:text-blue-700"
-                        onClick={() => setShowPaymentHistory(true)}
-                      >
-                        View History
-                      </Button>
-                    )}
                   </div>
                 )}
                 
-                {/* Payment Details Dialog */}
+                {/* Payment Details Dialog - Only show one at a time */}
                 <PaymentDetailsDialog
+                  key={`payment-dialog-${project.id}`}
                   projectId={project.id}
                   isAdmin={isAdmin}
                   onSave={handleSavePaymentDetails}
@@ -734,21 +724,7 @@ export default function ProjectCard({
               </div>
             )}
             
-            {/* Show Add Payment button for non-admin users when in payment processing state */}
-            {!isAdmin && ['PAYMENT_UNDER_REVIEW', 'PAYMENT_PROCESSING', 'PAYMENT_COMPLETED'].includes(project.status) && !paymentDetails && (
-              <div className="mt-2">
-                <PaymentDetailsDialog
-                  projectId={project.id}
-                  isAdmin={false}
-                  onSave={handleSavePaymentDetails}
-                  initialData={paymentDetails || undefined}
-                  isOpen={showPaymentDetails}
-                  onOpenChange={setShowPaymentDetails}
-                />
-                
-              </div>
-            )}
-            
+            {/* Single source of truth for payment dialog */}
             {/* Payment status badges for non-admin users */}
             {!isAdmin && paymentDetails?.status === 'PENDING' && (
               <div className="mt-2">
@@ -777,7 +753,7 @@ export default function ProjectCard({
         )}
         
         {/* Status and Actions */}
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+        {/* <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
           {paymentId && (
             <div className="flex items-center">
               Payment ID: <span className="font-mono ml-1">{paymentId}</span>
@@ -793,7 +769,7 @@ export default function ProjectCard({
               </button>
             </div>
           )}
-        </div>
+        </div> */}
 
         {/* Deliverables Viewer - Show for users in payment processing or completed states */}
         {!isAdmin && project.deliverables && project.deliverables.length > 0 && (
@@ -847,34 +823,23 @@ export default function ProjectCard({
 {project.status !== 'CANCELLED' && project.status !== 'PENDING' && (
   <div className="mt-4 space-y-2">
     {isAdmin ? (
-      // Admin view - Show deliverables upload and payment details
-      <>
-        <div className="flex gap-2">
-          <Button  
-            onClick={() => setShowDeliverableModal(true)} 
-            className="flex-1 bg-blue-500 hover:bg-blue-600"
-            variant="outline"
-          >
-            <Upload className="mr-2 h-4 w-4 text-white" />
-            <span className="text-white">Upload Deliverables</span>
-          </Button>
-          
-          <Button
-            onClick={() => setShowPaymentDetails(true)}
-            variant="outline"
-            className="flex-1 bg-emerald-500 hover:bg-emerald-600"
-          >
-            <CreditCard className="mr-2 h-4 w-4 text-white" />
-            <span className="text-white">Payment Details</span>
-          </Button>
-        </div>
-
+      // Admin view - Show deliverables upload
+      <div className="space-y-2">
+        <Button  
+          onClick={() => setShowDeliverableModal(true)} 
+          className="w-full bg-blue-500 hover:bg-blue-600"
+          variant="outline"
+        >
+          <Upload className="mr-2 h-4 w-4 text-white" />
+          <span className="text-white">Upload Deliverables</span>
+        </Button>
+        
         <DeliverablesUploadModal
           projectId={project.id}
           open={showDeliverableModal}
           onClose={() => setShowDeliverableModal(false)}
         />
-      </>
+      </div>
     ) : (
       // Normal user view - Show payment upload if needed
       project.status === 'PAYMENT_PROCESSING' && (
@@ -1175,136 +1140,7 @@ export default function ProjectCard({
 
     
 
-      {/* Payment Modal */}
-      {showPaymentDetails && (
-        <div 
-          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-          onClick={(e) => e.target === e.currentTarget && setShowPaymentDetails(false)}
-        >
-          <div 
-            ref={paymentModalRef}
-            className="bg-white rounded-xl w-full max-w-md p-6 relative"
-          >
-            <button 
-              onClick={() => setShowPaymentDetails(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
-            >
-              <X size={20} />
-            </button>
-            <div className="space-y-6">
-              <div className="text-center">
-                <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-emerald-100 mb-3">
-                  <CreditCard className="h-6 w-6 text-emerald-600" />
-                </div>
-                <h3 className="text-lg font-medium text-gray-900">
-                  {paymentSuccess ? 'Payment Confirmation' : 'Confirm Payment'}
-                </h3>
-                <p className="mt-1 text-sm text-gray-500">
-                  {paymentSuccess 
-                    ? 'Thank you for your payment! We will verify and update the status shortly.'
-                    : `Please confirm that you have made a payment of $${project.budget.toLocaleString()} for "${project.title}"`
-                  }
-                </p>
-              </div>
-
-              {!paymentSuccess ? (
-                <form 
-                  onSubmit={async (e) => {
-                    e.preventDefault();
-                    setIsProcessing(true);
-                    try {
-                      // Simulate payment processing
-                      await new Promise(resolve => setTimeout(resolve, 2000));
-                      setPaymentSuccess(true);
-                      if (onStatusChange) {
-                        onStatusChange(project.id, 'PAYMENT_COMPLETED');
-                      }
-                    } catch (error) {
-                      console.error('Error processing payment:', error);
-                    } finally {
-                      setIsProcessing(false);
-                    }
-                  }}
-                  className="space-y-4"
-                >
-                  <div className="space-y-2">
-                    <p className="text-sm text-gray-600">
-                      Please make the payment using the provided QR code or payment details, then confirm your payment below.
-                    </p>
-                    <div className="space-y-2">
-                      <label className="block text-sm font-medium text-gray-700">Transaction ID / UTR Number</label>
-                      <input 
-                        type="text" 
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                        placeholder="Enter transaction ID or UTR number"
-                        required
-                      />
-                      <p className="text-xs text-gray-500">
-                        Please enter the transaction ID or UTR number from your payment receipt
-                      </p>
-                    </div>
-                    
-                    <div className="mt-4">
-                      <label className="flex items-start">
-                        <input 
-                          type="checkbox" 
-                          className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded mt-0.5"
-                          required
-                        />
-                        <span className="ml-2 text-sm text-gray-700">
-                          I confirm that I have made the payment of ${project.budget.toLocaleString()} for &quot;{project.title}&quot;
-                        </span>
-                      </label>
-                    </div>
-
-                    <div className="mt-6 flex justify-between">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => setShowPaymentDetails(false)}
-                        disabled={isProcessing}
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        type="submit"
-                        disabled={isProcessing}
-                        className="bg-emerald-600 hover:bg-emerald-700"
-                      >
-                        {isProcessing ? (
-                          <>
-                            <Loader2 className="animate-spin h-4 w-4 mr-2" />
-                            Processing...
-                          </>
-                        ) : 'Confirm Payment'}
-                      </Button>
-                    </div>
-                    <p className="text-xs text-gray-500 text-center mt-4">
-                      Your payment is secured with 256-bit encryption
-                    </p>
-                  </div>
-                </form>
-              ) : (
-                <div className="text-center">
-                  <CheckCircle className="h-12 w-12 text-emerald-500 mx-auto mb-4" />
-                  <p className="text-sm text-gray-600 mb-6">
-                    Your payment confirmation has been received. We&apos;ll verify and update the project status shortly.
-                  </p>
-                  <Button 
-                    onClick={() => {
-                      setShowPaymentDetails(false);
-                      setPaymentSuccess(false);
-                    }}
-                    className="bg-emerald-600 hover:bg-emerald-700"
-                  >
-                    Close
-                  </Button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+    
 
       {/* Cancel Project Confirmation Dialog */}
       {showCancelConfirm && (
@@ -1373,6 +1209,85 @@ export default function ProjectCard({
           </div>
         </div>
       )}
+
+      {/* Payment Details Popup */}
+      <Dialog open={showPaymentPopup} onOpenChange={setShowPaymentPopup}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Payment Details</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {paymentDetails ? (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-500 mb-1">Amount</p>
+                    <p className="font-medium">${paymentDetails.amount}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500 mb-1">Status</p>
+                    <span className={`px-2 py-1 text-xs rounded-full ${
+                      paymentDetails.status === 'APPROVED' ? 'bg-green-100 text-green-800' :
+                      paymentDetails.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-red-100 text-red-800'
+                    }`}>
+                      {paymentDetails.status}
+                    </span>
+                  </div>
+                </div>
+                
+                <div>
+                  <p className="text-sm text-gray-500 mb-1">Transaction ID</p>
+                  <p className="font-mono text-sm break-all">{paymentDetails.transactionId}</p>
+                </div>
+                
+                {paymentDetails.screenshot && (
+                  <div>
+                    <p className="text-sm text-gray-500 mb-2">Payment Proof</p>
+                    <div className="relative w-full h-48 bg-gray-100 rounded-md overflow-hidden">
+                      <img 
+                        src={paymentDetails.screenshot} 
+                        alt="Payment proof" 
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
+                  </div>
+                )}
+                
+                {paymentDetails.notes && (
+                  <div>
+                    <p className="text-sm text-gray-500 mb-1">Notes</p>
+                    <p className="text-sm whitespace-pre-wrap">{paymentDetails.notes}</p>
+                  </div>
+                )}
+                
+                {paymentDetails.adminNotes && isAdmin && (
+                  <div className="bg-yellow-50 p-3 rounded-md">
+                    <p className="text-sm font-medium text-yellow-800 mb-1">Admin Notes</p>
+                    <p className="text-sm text-yellow-700 whitespace-pre-wrap">{paymentDetails.adminNotes}</p>
+                  </div>
+                )}
+                
+              </div>
+            ) : (
+              <div className="text-center py-4">
+                <p className="text-gray-500">No payment details available</p>
+                <Button 
+                  variant="outline" 
+                  className="mt-2"
+                  size="sm"
+                  onClick={() => {
+                    setShowPaymentPopup(false);
+                    setShowPaymentDetails(true);
+                  }}
+                >
+                  Add Payment Details
+                </Button>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

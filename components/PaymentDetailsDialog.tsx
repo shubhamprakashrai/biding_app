@@ -69,6 +69,8 @@ export function PaymentDetailsDialog({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Client-side validation
     if (!screenshot) {
       toast.error('Please upload a payment screenshot');
       return;
@@ -131,10 +133,10 @@ export function PaymentDetailsDialog({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" className="ml-2">
-          {isAdmin ? 'View Payment' : 'Add Payment Details'}
+          {isAdmin ? 'View Payment Details' : 'Add Payment Details'}
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {isAdmin ? 'Payment Details' : 'Submit Payment Details'}
@@ -219,7 +221,6 @@ export function PaymentDetailsDialog({
                 )}
               </div>
             </div>
-
             {/* User Notes */}
             {notes && (
               <div className="space-y-2">
@@ -411,7 +412,11 @@ export function PaymentDetailsDialog({
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={isUploading || !screenshot || !amount || !transactionId}>
+              <Button 
+                type="submit" 
+                disabled={isUploading}
+                className="min-w-[120px]"
+              >
                 {isUploading ? 'Submitting...' : 'Submit Payment'}
               </Button>
             </div>

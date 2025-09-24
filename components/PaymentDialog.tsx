@@ -1,7 +1,4 @@
-
-
 "use client";
-
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -116,10 +113,11 @@ export default function PaymentDialog({ open, onClose, qrId, projectId, projectN
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-sm rounded-2xl p-6">
-        <DialogHeader>
+      <DialogContent className="max-w-sm rounded-2xl p-0 overflow-hidden">
+        <DialogHeader className="px-6 pt-6 pb-4 border-b">
           <DialogTitle className="text-lg font-semibold">Payment for {projectName}</DialogTitle>
         </DialogHeader>
+        <div className="max-h-[70vh] overflow-y-auto px-6 pb-6">
 
         {/* QR Code Always Visible */}
         <div className="flex flex-col items-center justify-center gap-4 py-6">
@@ -193,11 +191,16 @@ export default function PaymentDialog({ open, onClose, qrId, projectId, projectN
               />
             </div>
 
-            <Button className="w-full mt-2" onClick={handleConfirmPayment} disabled={uploading}>
-              Submit Payment Proof
+            <Button 
+              className="w-full mt-2" 
+              onClick={handleConfirmPayment} 
+              disabled={uploading || !screenshotUrl || !transactionId}
+            >
+              {uploading ? 'Uploading...' : 'Submit Payment Proof'}
             </Button>
           </div>
         )}
+        </div>
       </DialogContent>
     </Dialog>
   );
