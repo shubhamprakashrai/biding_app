@@ -23,6 +23,7 @@ export default function PaymentDialog({ open, onClose, qrId, projectId, projectN
   const [uploadMode, setUploadMode] = useState<boolean>(false);
 
   const [transactionId, setTransactionId] = useState("");
+  const [amount, setAmount] = useState("");
   const [screenshotUrl, setScreenshotUrl] = useState("");
   const [uploading, setUploading] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -89,8 +90,9 @@ export default function PaymentDialog({ open, onClose, qrId, projectId, projectN
 
   // Save Payment Confirmation
   const handleConfirmPayment = async () => {
-    if (!transactionId || !screenshotUrl) {
-      alert("Please upload screenshot and enter transaction ID.");
+    const amountValue = parseFloat(amount);
+    if (!transactionId || !screenshotUrl || isNaN(amountValue) || amountValue <= 0) {
+      alert("Please fill in all fields with valid values (Amount must be greater than 0).");
       return;
     }
 
@@ -99,6 +101,7 @@ export default function PaymentDialog({ open, onClose, qrId, projectId, projectN
       await updateDoc(projectRef, {
         paymentProof: screenshotUrl,
         transactionId,
+        paymentAmount: amountValue,
         paymentConfirmedByUser: true,
         status: "PAYMENT_UNDER_REVIEW",
         updatedAt: serverTimestamp(),
@@ -180,6 +183,20 @@ export default function PaymentDialog({ open, onClose, qrId, projectId, projectN
               )}
             </div>
 
+            {/* Amount */}
+            <div>
+              <label className="text-sm font-medium">Amount (₹)</label>
+              <Input
+                type="number"
+                placeholder="Enter amount"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                min="0.01"
+                step="0.01"
+                className="mt-1"
+              />
+            </div>
+
             {/* Transaction ID */}
             <div>
               <label className="text-sm font-medium">Transaction / UTR ID</label>
@@ -188,13 +205,14 @@ export default function PaymentDialog({ open, onClose, qrId, projectId, projectN
                 placeholder="Enter Transaction ID"
                 value={transactionId}
                 onChange={(e) => setTransactionId(e.target.value)}
+                className="mt-1"
               />
             </div>
 
             <Button 
               className="w-full mt-2" 
               onClick={handleConfirmPayment} 
-              disabled={uploading || !screenshotUrl || !transactionId}
+              disabled={uploading || !screenshotUrl || !transactionId || !amount || parseFloat(amount) <= 0}
             >
               {uploading ? 'Uploading...' : 'Submit Payment Proof'}
             </Button>

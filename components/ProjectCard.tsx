@@ -715,7 +715,7 @@ export default function ProjectCard({
 
                 
                 {/* Payment Details Dialog - Only show one at a time */}
-                <PaymentDetailsDialog
+                {/* <PaymentDetailsDialog
                   key={`payment-dialog-${project.id}`}
                   projectId={project.id}
                   isAdmin={isAdmin}
@@ -724,7 +724,7 @@ export default function ProjectCard({
                   initialData={paymentDetails || undefined}
                   isOpen={showPaymentDetails}
                   onOpenChange={setShowPaymentDetails}
-                />
+                /> */}
               </div>
             )}
             
@@ -845,21 +845,22 @@ export default function ProjectCard({
         />
       </div>
     ) : (
-      // Normal user view - Show payment upload if needed
-      project.status === 'PAYMENT_PROCESSING' && (
+      // Only show payment button for admin users
+      isAdmin && project.status === 'PAYMENT_PROCESSING' && (
         <Button
           onClick={() => setShowPaymentDetails(true)}
           variant="outline"
-          className="w-full bg-emerald-500 hover:bg-emerald-600"
+          className="w-full bg-blue-600 hover:bg-blue-700"
         >
           <CreditCard className="mr-2 h-4 w-4 text-white" />
-          <span className="text-white">Upload Payment Details</span>
+          <span className="text-white">Process Payment</span>
         </Button>
       )
     )}
     
-    {/* Payment Details Dialog */}
-    <PaymentDetailsDialog
+    {/* Payment Details Dialog - Only show for admin */}
+    {isAdmin && (
+      <PaymentDetailsDialog
       isOpen={showPaymentDetails}
       onOpenChange={setShowPaymentDetails}
       projectId={project.id}
@@ -953,7 +954,8 @@ export default function ProjectCard({
           return false;
         }
       }}
-    />
+      />
+    )}
   </div>
 )}
         
