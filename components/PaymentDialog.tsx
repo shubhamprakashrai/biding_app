@@ -14,16 +14,24 @@ interface PaymentDialogProps {
   qrId: string;
   projectId: string;
   projectName: string;
+  paymentAmount?: number;
 }
 
-export default function PaymentDialog({ open, onClose, qrId, projectId, projectName }: PaymentDialogProps) {
+export default function PaymentDialog({ 
+  open, 
+  onClose, 
+  qrId, 
+  projectId, 
+  projectName, 
+  paymentAmount = 0 
+}: PaymentDialogProps) {
   const [qrValue, setQrValue] = useState<string>("");
   const [paymentId, setPaymentId] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [uploadMode, setUploadMode] = useState<boolean>(false);
 
   const [transactionId, setTransactionId] = useState("");
-  const [amount, setAmount] = useState("");
+  const [amount, setAmount] = useState(paymentAmount ? paymentAmount.toString() : "");
   const [screenshotUrl, setScreenshotUrl] = useState("");
   const [uploading, setUploading] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -178,34 +186,43 @@ export default function PaymentDialog({ open, onClose, qrId, projectId, projectN
                 <img
                   src={screenshotUrl}
                   alt="Proof"
-                  className="mt-2 w-32 h-32 object-cover rounded-md border"
                 />
               )}
             </div>
 
             {/* Amount */}
-            <div>
-              <label className="text-sm font-medium">Amount (₹)</label>
-              <Input
-                type="number"
-                placeholder="Enter amount"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                min="0.01"
-                step="0.01"
-                className="mt-1"
-              />
-            </div>
-
-            {/* Transaction ID */}
-            <div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Amount to Pay
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <span className="text-gray-500 sm:text-sm">₹</span>
+                  </div>
+                  <input
+                    type="number"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    className="w-full pl-7 pr-12 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="0.00"
+                    min="0"
+                    step="0.01"
+                    required
+                  />
+                </div>
+                {paymentAmount > 0 && (
+                  <p className="mt-1 text-sm text-gray-500">
+                    Expected amount: ₹{paymentAmount.toFixed(2)}
+                  </p>
+                )}
+              </div>
               <label className="text-sm font-medium">Transaction / UTR ID</label>
               <Input
                 type="text"
                 placeholder="Enter Transaction ID"
                 value={transactionId}
                 onChange={(e) => setTransactionId(e.target.value)}
-                className="mt-1"
               />
             </div>
 

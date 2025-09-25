@@ -47,6 +47,7 @@ export interface Project {
   contactName: string;
   paymentQrCode?: string;
   paymentId?: string;
+  paymentAmount?: number;
   paymentMethod?: string;
   paymentStatusHistory?: Array<{
     status: 'PENDING' | 'APPROVED' | 'REJECTED';

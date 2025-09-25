@@ -867,9 +867,11 @@ export default function ProjectCard({
       isAdmin={isAdmin}
       initialData={{
         screenshot: project.paymentProof || '',
-        amount: project.budget,
+        amount: project.paymentAmount || project.budget, // Use paymentAmount if exists, otherwise fallback to budget
+        paymentAmount: project.paymentAmount || project.budget, // Same as above for consistency
         transactionId: project.transactionId || '',
         notes: project.paymentNotes || '',
+        
         // Map project status to payment status
         status: (() => {
           switch(project.status) {
@@ -1050,11 +1052,12 @@ export default function ProjectCard({
           )}
           {selectedProject && (
             <PaymentDialog
-            projectId={selectedProject.id}
+              projectId={selectedProject.id}
               open={open}
               onClose={setOpen}
               qrId={selectedProject.paymentQrCode || ""}
               projectName={selectedProject.title}
+              paymentAmount={selectedProject.budget}
             />
           )}
         </div>

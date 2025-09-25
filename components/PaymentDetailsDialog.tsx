@@ -21,8 +21,10 @@ export interface PaymentStatusHistory {
 export interface PaymentDetails {
   screenshot: string;
   amount: number;
+  paymentAmount: number;
   transactionId: string;
   notes: string;
+  
   timestamp: Timestamp | Date;
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
   statusHistory?: PaymentStatusHistory[];  // Made optional with '?'
@@ -90,7 +92,8 @@ export function PaymentDetailsDialog({
         screenshot: screenshot || '',
         amount: parseFloat(amount),
         transactionId: transactionId.trim(),
-        notes: notes.trim()
+        notes: notes.trim(),
+        paymentAmount: parseFloat(amount),
       };
       
       await onSave(paymentData);
@@ -174,8 +177,10 @@ export function PaymentDetailsDialog({
               <h3 className="text-sm font-medium">Transaction Details</h3>
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Amount:</span>
-                  <span className="font-medium">${parseFloat(amount).toFixed(2)}</span>
+                  <span className="text-gray-500">Amount Paid:</span>
+                  <span className="font-medium">
+                    ₹{(initialData?.paymentAmount || parseFloat(amount) || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">Status:</span>
@@ -223,9 +228,9 @@ export function PaymentDetailsDialog({
             </div>
             {/* User Notes */}
             {notes && (
-              <div className="space-y-2">
-                <h3 className="text-sm font-medium">User Notes</h3>
-                <div className="p-3 bg-gray-50 rounded-md text-sm text-gray-700">
+              <div className="bg-white p-4 rounded-lg border shadow-sm">
+                <h3 className="text-sm font-medium text-gray-700 mb-2">User Notes</h3>
+                <div className="p-3 bg-gray-50 rounded-md text-sm text-gray-700 whitespace-pre-wrap">
                   {notes}
                 </div>
               </div>
@@ -234,31 +239,42 @@ export function PaymentDetailsDialog({
 
             {/* Status History */}
             {initialData?.statusHistory && initialData.statusHistory.length > 0 && (
-              <div className="space-y-2">
-                <h3 className="text-sm font-medium">Status History</h3>
-                <div className="space-y-2 max-h-40 overflow-y-auto p-2 border rounded-md">
+              <div className="bg-white p-4 rounded-lg border shadow-sm">
+                <h3 className="text-sm font-medium text-gray-700 mb-3">Status History</h3>
+                <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
                   {[...initialData.statusHistory].reverse().map((status, index) => (
-                    <div key={index} className="flex items-start gap-3 text-sm">
-                      <div className={`mt-1 h-2 w-2 rounded-full flex-shrink-0 ${
+                    <div key={index} className="relative pl-4 pb-3 border-l-2 border-gray-200 last:border-transparent">
+                      <div className={`absolute -left-1.5 mt-1 h-3 w-3 rounded-full ${
                         status.status === 'APPROVED' ? 'bg-green-500' :
                         status.status === 'REJECTED' ? 'bg-red-500' :
                         'bg-yellow-500'
                       }`} />
-                      <div className="flex-1">
-                        <div className="flex justify-between">
-                          <span className="font-medium">
-                            {status.status.charAt(0).toUpperCase() + status.status.slice(1).toLowerCase()}
-                          </span>
-                          <span className="text-xs text-gray-500">
-                            {status.updatedBy === 'admin' ? 'Admin' : 'User'} • {
-                              status.timestamp instanceof Date ? 
+                      <div className="ml-3">
+                        <div className="flex flex-col sm:flex-row sm:justify-between gap-2">
+                          <div className="flex items-center">
+                            <span className={`text-sm font-medium ${
+                              status.status === 'APPROVED' ? 'text-green-700' :
+                              status.status === 'REJECTED' ? 'text-red-700' :
+                              'text-yellow-700'
+                            }`}>
+                              {status.status.charAt(0).toUpperCase() + status.status.slice(1).toLowerCase()}
+                            </span>
+                            <span className="mx-2 text-gray-300">•</span>
+                            <span className="text-xs text-gray-500">
+                              {status.updatedBy === 'admin' ? 'Admin' : 'User'}
+                            </span>
+                          </div>
+                          <span className="text-xs text-gray-500 whitespace-nowrap">
+                            {status.timestamp instanceof Date ? 
                               status.timestamp.toLocaleString() : 
                               status.timestamp.toDate().toLocaleString()
                             }
                           </span>
                         </div>
                         {status.notes && (
-                          <p className="text-xs text-gray-600 mt-0.5">{status.notes}</p>
+                          <p className="text-xs text-gray-600 mt-1 pl-1 italic">
+                            {status.notes}
+                          </p>
                         )}
                       </div>
                     </div>
@@ -281,18 +297,41 @@ export function PaymentDetailsDialog({
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <Label htmlFor="amount">Amount</Label>
-              <Input
-                id="amount"
-                type="number"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                required
-                min={0}
-                step="0.01"
-                placeholder="0.00"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="amount">Amount Paid</Label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <span className="text-gray-500 sm:text-sm">₹</span>
+                  </div>
+                  <Input
+                    id="amount"
+                    type="number"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    required
+                    min={0}
+                    step="0.01"
+                    placeholder="0.00"
+                    className="pl-7"
+                  />
+                </div>
+              </div>
+              <div>
+                <Label>Total Payment Amount</Label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <span className="text-gray-500 sm:text-sm">₹</span>
+                  </div>
+                  <Input
+                    type="text"
+                    value={initialData?.paymentAmount?.toFixed(2) || '0.00'}
+                    readOnly
+                    className="bg-gray-50 pl-7 font-medium text-gray-900"
+                    disabled
+                  />
+                </div>
+              </div>
             </div>
             <div>
               <Label htmlFor="transactionId">Transaction ID</Label>
