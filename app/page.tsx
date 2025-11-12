@@ -3,18 +3,18 @@ import Hero from '@/components/Hero';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'ProjectManager - Professional Project Management Platform',
-  description: 'Connect with top-tier professionals and freelancers. Submit project requirements, receive expert proposals, and collaborate seamlessly to achieve exceptional results.',
+  title: 'SourceCodeLelo - Get Production-Ready Mobile Apps Instantly',
+  description: 'Transform your app idea into reality instantly with complete source code, package ID, and keystore setup for production-ready mobile applications.',
   openGraph: {
-    title: 'ProjectManager - Professional Project Management Platform',
-    description: 'Connect with top-tier professionals and freelancers. Submit project requirements, receive expert proposals, and collaborate seamlessly.',
-    url: 'https://projectmanager.com',
+    title: 'SourceCodeLelo - Get Production-Ready Mobile Apps Instantly',
+    description: 'Transform your app idea into reality instantly with complete source code, package ID, and keystore setup for production-ready mobile applications.',
+    url: 'https://sourcecodelelo.com',
     images: [
       {
         url: 'https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg',
         width: 1200,
         height: 630,
-        alt: 'ProjectManager Platform Homepage'
+        alt: 'SourceCodeLelo Platform Homepage'
       }
     ]
   }

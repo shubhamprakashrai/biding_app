@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Login - ProjectManager',
-  description: 'Sign in to your ProjectManager account to access your dashboard and manage your projects.',
+  title: 'Login - SourceCodeLelo',
+  description: 'Sign in to your SourceCodeLelo account to access your dashboard and manage your projects.',
   robots: {
     index: false,
     follow: true,

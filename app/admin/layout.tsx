@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Admin Dashboard - ProjectManager',
+  title: 'Admin Dashboard -   SourceCodeLelo',
   description: 'Admin panel for managing project requests, proposals, and client communications.',
   robots: {
     index: false,
