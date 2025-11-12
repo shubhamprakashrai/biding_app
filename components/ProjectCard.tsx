@@ -1,5 +1,5 @@
 import { Project } from '@/types';
-import { Calendar, DollarSign, Clock, MessageSquare, Edit2, ArrowRight, ChevronDown, Check, X, Download, CreditCard, Loader2, Copy, QrCode, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Calendar, DollarSign, Clock, MessageSquare, Edit2, ArrowRight, ChevronDown, Check, X, Download, CreditCard, Loader2, Copy, QrCode, CheckCircle, AlertTriangle, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState, useRef, useEffect } from 'react';
 import { Button } from './ui/button';
@@ -481,9 +481,24 @@ export default function ProjectCard({
         </div>
 
         {/* Description */}
-        <p className="text-gray-600 mb-5 text-sm leading-relaxed line-clamp-3">
-          {project.description}
-        </p>
+        <div className="relative">
+          <div className="relative inline-block w-full">
+            <p 
+              className="text-gray-600 mb-5 text-sm leading-relaxed line-clamp-3 cursor-help hover:bg-gray-50 transition-colors rounded px-1 -mx-1 py-0.5"
+              title=""
+            >
+              {project.description}
+              {project.description.split('\n').some(part => part.length > 100) && (
+                <span className="opacity-0 group-hover:opacity-100 transition-opacity ml-1">
+                  <Info className="h-4 w-4 text-gray-400 inline-block" />
+                </span>
+              )}
+            </p>
+            <div className="hidden absolute z-10 w-64 p-3 mt-1 text-sm text-gray-600 bg-white border border-gray-200 rounded-lg shadow-lg left-0">
+              {project.description}
+            </div>
+          </div>
+        </div>
 
         {/* Action Buttons */}
         {showActions && (
