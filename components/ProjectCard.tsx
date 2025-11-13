@@ -584,9 +584,12 @@ export default function ProjectCard({
         {/* Header with status */}
         <div className="flex justify-between items-start mb-4">
           <div className="flex-1 min-w-0">
-            <h3 className="text-lg font-semibold text-gray-900 group-hover:text-emerald-600 transition-colors duration-200 line-clamp-2">
-              {project.title}
-            </h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900">{project.title}</h3>
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 mr-7">
+                {project.type?.toUpperCase() || 'APP'}
+              </span>
+            </div>
             {/* QR Code Selector for Payment Processing */}
             {(project.status === 'PAYMENT_PROCESSING' || showQrError) && isAdmin && (
               <div className="mt-2">
@@ -997,7 +1000,8 @@ export default function ProjectCard({
             <Clock size={12} className="mr-1.5 flex-shrink-0" />
             <span className="truncate">Created {formatDate(project.createdAt)}</span>
           </div>
-          
+
+
           {/* Contact Information */}
           <div className="space-y-1 mt-2 pt-2 border-t border-gray-100">
             {project.email && (

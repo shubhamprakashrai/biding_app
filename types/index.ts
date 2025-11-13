@@ -28,6 +28,9 @@ export interface PaymentInfo {
   transactionId?: string;
 }
 
+
+
+
 export interface Project {
   id: string;
   title: string;
@@ -81,7 +84,15 @@ export interface Project {
     uploadedAt: any;
     url: string;
   }>;
+
+  type: ProjectType;
+  accessEmail?: string;
+  accessLink?: string;
+  vpsEmail?: string;
+  vpsPassword?: string;
+
 }
+type ProjectType = 'app' | 'access' | 'vps';
 
 export interface Proposal {
   id: string;
