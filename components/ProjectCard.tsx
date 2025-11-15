@@ -198,6 +198,7 @@ export default function ProjectCard({
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [open, setOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
 
   const canUploadDeliverables =
   project.transactionId &&
@@ -650,20 +651,34 @@ export default function ProjectCard({
 
         {/* Description */}
         <div className="relative">
-          <div className="relative inline-block w-full">
-            <p 
-              className="text-gray-600 mb-5 text-sm leading-relaxed line-clamp-3 cursor-help hover:bg-gray-50 transition-colors rounded px-1 -mx-1 py-0.5"
-              title=""
-            >
-              {project.description}
-              {project.description.split('\n').some(part => part.length > 100) && (
-                <span className="opacity-0 group-hover:opacity-100 transition-opacity ml-1">
-                  <Info className="h-4 w-4 text-gray-400 inline-block" />
-                </span>
+          <div className="relative w-full">
+            <div className="relative">
+              <p 
+                className={cn(
+                  "text-gray-600 text-sm leading-relaxed transition-all duration-200",
+                  isDescriptionExpanded ? "line-clamp-none" : "line-clamp-3"
+                )}
+              >
+                {project.description}
+              </p>
+              {project.description.split('\n').some(part => part.length > 100 || part.split(' ').length > 20) && (
+                <button 
+                  onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                  className="text-blue-600 hover:text-blue-800 text-xs font-medium mt-1 flex items-center transition-colors"
+                >
+                  {isDescriptionExpanded ? (
+                    <>
+                      <span>Show Less</span>
+                      <ChevronDown className="h-4 w-4 ml-1 transform rotate-180" />
+                    </>
+                  ) : (
+                    <>
+                      <span>Show More</span>
+                      <ChevronDown className="h-4 w-4 ml-1" />
+                    </>
+                  )}
+                </button>
               )}
-            </p>
-            <div className="hidden absolute z-10 w-64 p-3 mt-1 text-sm text-gray-600 bg-white border border-gray-200 rounded-lg shadow-lg left-0">
-              {project.description}
             </div>
           </div>
         </div>
