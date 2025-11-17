@@ -61,21 +61,29 @@ export function middleware(request: NextRequest) {
     }
   }
 
-  // PUBLIC PAGE + LOGGED IN → redirect dashboard
-  if (isPublic && user) {
+  // ====== LOGGED-IN USERS VISITING LOGIN OR REGISTER ======
+  if ((path === "/login" || path === "/register") && user) {
+    // Admin goes to /admin
+    if (user.role === "ADMIN") {
+      return NextResponse.redirect(new URL("/admin", request.url));
+    }
+    // Normal user goes to /dashboard
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
-  // PROTECTED PAGES + NOT LOGGED IN → redirect login
+  // ====== PROTECTED ROUTES ======
   if (!isPublic && !user) {
+    // Not logged in → redirect to login
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  // ADMIN PAGES → check role
+  // ====== ADMIN ROUTES ======
   if (path.startsWith("/admin") && user?.role !== "ADMIN") {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
-
+  if (path.startsWith("/dashboard") && user?.role === "ADMIN") {
+    return NextResponse.redirect(new URL("/admin", request.url));
+  }
   return NextResponse.next();
 }
 
