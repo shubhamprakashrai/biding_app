@@ -45,7 +45,7 @@ export default function LoginPage() {
       );
 
       const user = userCredential.user;
-      console.log('Firebase auth successful, user:', user.uid);
+      console.log('Firebase auth successful, user:', user);
 
       // Fetch additional user data from Firestore
       const docRef = doc(db, 'users', user.uid);
