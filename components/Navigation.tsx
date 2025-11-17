@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react';
 import { Menu, X, Home, LogIn, UserPlus, LayoutDashboard, Settings, ChevronDown } from 'lucide-react';
 import { signOut, onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/app/firebase/firebase';
+import Cookies from "js-cookie";
 
 interface UserData {
   email: string;
@@ -70,15 +71,26 @@ export default function Navigation() {
   }, []);
 
   const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      setCurrentUser(null);
-      localStorage.removeItem('user');
-      router.push('/');
-    } catch (error) {
-      console.error('Logout failed:', error);
-    }
-  };
+  try {
+    await signOut(auth);
+
+    // Clear Zustand store
+    setCurrentUser(null);
+    Cookies.remove("user");
+    // Remove all stored data
+    localStorage.removeItem("user");
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+
+    // Optional: Clear everything (if preferred)
+    // localStorage.clear();
+
+    router.push("/");
+  } catch (error) {
+    console.error("Logout failed:", error);
+  }
+};
+
 
   if (loading) {
     return (

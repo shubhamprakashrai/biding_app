@@ -44,3 +44,5 @@ export interface Message {
   content: string;
   timestamp: string;
 }
+
+export type UserRole = "ADMIN" | "USER";
