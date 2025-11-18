@@ -2,12 +2,14 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, LogIn, Mail, Lock } from 'lucide-react';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth, db } from '@/app/firebase/firebase';
 import { doc, getDoc } from 'firebase/firestore';
+import { useRouter } from 'next/navigation';
+import { useAuthStore } from '@/store/authStore';
 import GoogleLoginButton from '@/components/GoogleLoginButton';
+import Cookies from 'js-cookie';
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({
@@ -17,6 +19,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const setUser = useAuthStore(state => state.setUser);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
@@ -26,73 +29,81 @@ export default function LoginPage() {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.email || !formData.password) {
-      alert('Please fill in all fields');
+  e.preventDefault();
+
+  if (!formData.email || !formData.password) {
+    alert("Please fill in all fields");
+    return;
+  }
+
+  setIsLoading(true);
+
+  try {
+    // Firebase login
+    const userCredential = await signInWithEmailAndPassword(
+      auth,
+      formData.email,
+      formData.password
+    );
+
+    const user = userCredential.user;
+
+    // Fetch Firestore user details
+    const userDocRef = doc(db, "users", user.uid);
+    const userDocSnap = await getDoc(userDocRef);
+
+    if (!userDocSnap.exists()) {
+      alert("User record not found.");
+      setIsLoading(false);
       return;
     }
 
-    setIsLoading(true);
-    console.log('Login attempt started for:', formData.email);
+    const userData = userDocSnap.data();
+    const role = userData.role || "USER";
 
-    try {
-      // Firebase sign in
-      console.log('Attempting to sign in...');
-      const userCredential = await signInWithEmailAndPassword(
-        auth,
-        formData.email,
-        formData.password
-      );
+    // Extract Firebase tokens
+    const accessToken = user.stsTokenManager.accessToken;
+    const refreshToken = user.stsTokenManager.refreshToken;
 
-      const user = userCredential.user;
-      console.log('Firebase auth successful, user:', user.uid);
+    // Create unified user object
+    const userInfo = {
+      uid: user.uid,
+      email: user.email || "",
+      name: userData.name || user.email?.split("@")[0] || "User",
+      role,
+      accessToken,
+      refreshToken,
+    };
 
-      // Fetch additional user data from Firestore
-      const docRef = doc(db, 'users', user.uid);
-      const docSnap = await getDoc(docRef);
+    // ---------- LOCAL STORAGE ----------
+    localStorage.setItem("user", JSON.stringify(userInfo));
+    localStorage.setItem("accessToken", accessToken);
+    localStorage.setItem("refreshToken", refreshToken);
+    Cookies.set("user", JSON.stringify(userInfo), { expires: 7 });
+    // ---------- ZUSTAND STORE ----------
+    setUser(userInfo);  // 👈 saves login to Zustand
 
-      if (!docSnap.exists()) {
-        alert('User data not found. Please contact support.');
-        setIsLoading(false);
-        return;
-      }
+    // Update Navigation UI
+    window.dispatchEvent(new Event("storage"));
 
-      const userData = docSnap.data();
-      const role = userData.role || 'USER';
-      const userInfo = {
-        email: user.email,
-        role,
-        name: userData.name || user.email?.split('@')[0] || 'User',
-        uid: user.uid
-      };
+    // ---------- REDIRECT ----------
+    router.push(role === "ADMIN" ? "/admin" : "/dashboard");
 
-      // Store user data in localStorage
-      localStorage.setItem('user', JSON.stringify(userInfo));
-      
-      // Force a refresh to update the Navigation component
-      window.dispatchEvent(new Event('storage'));
+  } catch (error: any) {
+    console.error("Login error:", error);
 
-      // Redirect based on role
-      if (role === 'ADMIN') {
-        router.push('/admin');
-      } else {
-        router.push('/dashboard');
-      }
-    } catch (error: any) {
-      console.error('Login error:', error);
-      let message = 'An error occurred during login. Please try again.';
+    let message = "Login failed. Please try again.";
 
-      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-        message = 'Invalid email or password.';
-      } else if (error.code === 'auth/invalid-email') {
-        message = 'Invalid email address.';
-      }
-
-      alert(message);
-    } finally {
-      setIsLoading(false);
+    if (error.code === "auth/user-not-found" || error.code === "auth/wrong-password") {
+      message = "Invalid email or password.";
     }
-  };
+
+    alert(message);
+  } finally {
+    setIsLoading(false);
+  }
+};
+
 
   return (
     <div className="min-h-screen bg-gray-50">

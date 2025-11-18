@@ -7,7 +7,7 @@ import { Menu, X, Home, LogIn, UserPlus, LayoutDashboard, Settings, ChevronDown 
 import { signOut, onAuthStateChanged } from 'firebase/auth';
 import { auth, db } from '@/app/firebase/firebase';
 import { doc, getDoc } from 'firebase/firestore';
-
+import Cookies from "js-cookie";
 interface UserData {
   email: string;
   role: 'USER' | 'ADMIN';
@@ -164,18 +164,26 @@ export default function Navigation() {
   }, [isProfileOpen]);
 
   const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      setCurrentUser(null);
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('user');
-      }
-      setIsProfileOpen(false);
-      router.push('/');
-    } catch (error) {
-      console.error('Logout failed:', error);
-    }
-  };
+  try {
+    await signOut(auth);
+
+    // Clear Zustand store
+    setCurrentUser(null);
+    Cookies.remove("user");
+    // Remove all stored data
+    localStorage.removeItem("user");
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+
+    // Optional: Clear everything (if preferred)
+    // localStorage.clear();
+
+    router.push("/");
+  } catch (error) {
+    console.error("Logout failed:", error);
+  }
+};
+
 
   const handleImageError = (imageUrl: string) => {
     console.log('Image failed to load:', imageUrl);
