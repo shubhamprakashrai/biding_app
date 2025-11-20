@@ -10,7 +10,8 @@ import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 import GoogleLoginButton from "@/components/GoogleLoginButton";
 import Cookies from "js-cookie";
-import { useToast } from "@/hooks/use-toast";
+import { showSuccessToast, showErrorToast } from "@/utils/auth/authToast";
+
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({
@@ -27,7 +28,6 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
 
   const router = useRouter();
-  const { toast } = useToast();
   const setUser = useAuthStore((state) => state.setUser);
 
   // ---------------------------------------------
@@ -118,9 +118,7 @@ export default function LoginPage() {
       setUser(userInfo);
 
       // Toast success
-      toast({
-        description: `Login Successful`,
-      });
+      showSuccessToast("Login Successful");
 
       // Redirect by role
       router.push(role === "ADMIN" ? "/admin" : "/dashboard");
@@ -136,10 +134,7 @@ export default function LoginPage() {
         }));
       }
 
-      toast({
-        variant: "destructive",
-        description: message,
-      });
+      showErrorToast("Invalid credentials");
     } finally {
       setIsLoading(false);
     }
