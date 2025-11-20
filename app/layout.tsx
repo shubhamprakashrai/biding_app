@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 // Viewport is automatically inferred in Next.js 13+
 import { Inter } from 'next/font/google';
 import Layout from '@/components/Layout';
+import { Toaster } from "@/components/ui/toaster";
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -146,6 +147,7 @@ export default function RootLayout({
         />
       </head>
       <body className={inter.className}>
+        <Toaster />
         <Layout>{children}</Layout>
       </body>
     </html>
