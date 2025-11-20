@@ -312,7 +312,17 @@ export default function RegisterForm() {
   const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e: any) => {
-    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    // setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+
+    // Update form data
+    setFormData(prev => ({ ...prev, [name]: value }));
+
+    // Clear ONLY that field's error
+    setErrors(prev => ({
+      ...prev,
+      [name]: ""
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
