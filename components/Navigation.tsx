@@ -3,14 +3,14 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { Menu, X, Home, LogIn, UserPlus, LayoutDashboard, Settings, ChevronDown } from 'lucide-react';
+import { Menu, X, Home, LogIn, UserPlus, LayoutDashboard, Settings, ChevronDown,Cog } from 'lucide-react';
 import { signOut, onAuthStateChanged } from 'firebase/auth';
 import { auth, db } from '@/app/firebase/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import Cookies from "js-cookie";
 interface UserData {
   email: string;
-  role: 'USER' | 'ADMIN';
+  role: 'USER' | 'ADMIN'| 'DEV';
   name: string;
   photoURL?: string;
   uid: string;
@@ -44,10 +44,25 @@ export default function Navigation() {
     { href: '/admin', label: 'Admin Panel', icon: Settings },
   ];
 
+  const devLinks = [
+    { href: '/', label: 'Home', icon: Home },
+    { href: '/dev-dashboard', label: 'Dev Panel', icon: Cog },
+  ];
   const getLinks = () => {
-    if (!currentUser) return publicLinks;
-    return currentUser.role === 'ADMIN' ? adminLinks : userLinks;
-  };
+  if (!currentUser) return publicLinks;
+
+  switch (currentUser.role) {
+    case "ADMIN":
+      return adminLinks;
+
+    case "DEV":
+      return devLinks;
+
+    case "USER":
+    default:
+      return userLinks;
+  }
+};
 
   useEffect(() => {
     let isMounted = true;
@@ -246,7 +261,7 @@ export default function Navigation() {
               <span className="text-white font-bold text-sm">SCL</span>
             </div>
             <span className="text-xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
-              {currentUser?.name?.split(' ')[0] || 'SourceCodeLelo'}
+              {'SourceCodeLelo'}
             </span>
           </Link>
 
@@ -295,8 +310,16 @@ export default function Navigation() {
                       <UserAvatar size="large" user={currentUser} />
                       <div>
                         <p className="text-sm font-medium text-gray-900">{currentUser.name}</p>
-                        <p className="text-xs text-gray-500">{currentUser.role === 'ADMIN' ? 'Administrator' : 'User'}</p>
+
+                        <p className="text-xs text-gray-500">
+                          {currentUser.role === "ADMIN"
+                            ? "Administrator"
+                            : currentUser.role === "DEV"
+                            ? "Developer"
+                            : "User"}
+                        </p>
                       </div>
+
                     </div>
                     <div className="py-1">
                       <Link

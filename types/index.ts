@@ -116,4 +116,4 @@ export interface Message {
   timestamp: string;
 }
 
-export type UserRole = "ADMIN" | "USER";
+export type UserRole = "ADMIN" | "USER" | "DEV";

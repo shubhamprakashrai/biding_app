@@ -1,38 +1,64 @@
-// import { NextResponse } from 'next/server';
-// import type { NextRequest } from 'next/server';
+// import { NextResponse } from "next/server";
+// import type { NextRequest } from "next/server";
 
 // export function middleware(request: NextRequest) {
 //   const path = request.nextUrl.pathname;
-//   const isPublicPath = path === '/login' || path === '/register' || path === '/';
-//   const token = request.cookies.get('auth-token')?.value || '';
+
+//   // Public paths
+//   const isPublic = 
+//     path === "/" || 
+//     path === "/login" || 
+//     path === "/register";
+
+//   // Get cookie "user"
+//   const userCookie = request.cookies.get("user")?.value;
+//   console.log('Middleware - user cookie:', userCookie);
+//   let user = null;
+
+//   if (userCookie) {
+//     try {
+//       user = JSON.parse(userCookie);
+//     } catch (e) {
+//       user = null;
+//     }
+//   }
+
+//   // ====== LOGGED-IN USERS VISITING LOGIN OR REGISTER ======
+//   if ((path === "/login" || path === "/register") && user) {
+//     // Admin goes to /admin
+//     if (user.role === "ADMIN") {
+//       return NextResponse.redirect(new URL("/admin", request.url));
+//     }
+//     // Normal user goes to /dashboard
+//     return NextResponse.redirect(new URL("/dashboard", request.url));
+//   }
+
+//   // ====== PROTECTED ROUTES ======
+//   if (!isPublic && !user) {
+//     // Not logged in → redirect to login
+//     return NextResponse.redirect(new URL("/login", request.url));
+//   }
+
+//   // ====== ADMIN ROUTES ======
+//   if (path.startsWith("/admin") && user?.role !== "ADMIN") {
+//     return NextResponse.redirect(new URL("/dashboard", request.url));
+//   }
+//   if (path.startsWith("/dashboard") && user?.role === "ADMIN") {
+//     return NextResponse.redirect(new URL("/admin", request.url));
+//   }
   
-//   // If it's a public path and user is logged in, redirect to dashboard
-//   if (isPublicPath && token) {
-//     return NextResponse.redirect(new URL('/dashboard', request.nextUrl));
-//   }
-
-//   // If it's a protected path and user is not logged in, redirect to login
-//   if (!isPublicPath && !token) {
-//     return NextResponse.redirect(new URL('/login', request.nextUrl));
-//   }
-
-//   // For admin routes
-//   if (path.startsWith('/admin') && !request.cookies.get('user-role')?.value?.includes('ADMIN')) {
-//     return NextResponse.redirect(new URL('/unauthorized', request.nextUrl));
-//   }
+//   return NextResponse.next();
 // }
 
 // export const config = {
 //   matcher: [
-//     '/',
-//     '/login',
-//     '/register',
-//     '/dashboard/:path*',
-//     '/admin/:path*',
+//     "/", 
+//     "/login",
+//     "/register",
+//     "/dashboard/:path*",
+//     "/admin/:path*"
 //   ],
 // };
-
-
 
 
 
@@ -42,57 +68,95 @@ import type { NextRequest } from "next/server";
 export function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
 
-  // Public paths
-  const isPublic = 
-    path === "/" || 
-    path === "/login" || 
+  // Public routes
+  const isPublic =
+    path === "/" ||
+    path === "/login" ||
     path === "/register";
 
-  // Get cookie "user"
+  // Read "user" cookie
   const userCookie = request.cookies.get("user")?.value;
-  console.log('Middleware - user cookie:', userCookie);
   let user = null;
 
   if (userCookie) {
     try {
-      user = JSON.parse(userCookie);
+      user = JSON.parse(userCookie); // { name, email, role }
     } catch (e) {
       user = null;
     }
   }
 
-  // ====== LOGGED-IN USERS VISITING LOGIN OR REGISTER ======
+  // ==========================================================
+  // 1. LOGGED-IN USERS VISITING LOGIN OR REGISTER
+  // ==========================================================
   if ((path === "/login" || path === "/register") && user) {
-    // Admin goes to /admin
     if (user.role === "ADMIN") {
       return NextResponse.redirect(new URL("/admin", request.url));
     }
-    // Normal user goes to /dashboard
+    if (user.role === "DEV") {
+      return NextResponse.redirect(new URL("/dev-dashboard", request.url));
+    }
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
-  // ====== PROTECTED ROUTES ======
+  // ==========================================================
+  // 2. PROTECTED ROUTES - user must be logged in
+  // ==========================================================
   if (!isPublic && !user) {
-    // Not logged in → redirect to login
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  // ====== ADMIN ROUTES ======
-  if (path.startsWith("/admin") && user?.role !== "ADMIN") {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+  // ==========================================================
+  // 3. ADMIN ROUTE PROTECTION
+  // ==========================================================
+  if (path.startsWith("/admin")) {
+    if (user?.role !== "ADMIN") {
+      // If DEV tries to open ADMIN → send to DEV dashboard
+      if (user?.role === "DEV") {
+        return NextResponse.redirect(new URL("/dev-dashboard", request.url));
+      }
+      // Normal user → send to user dashboard
+      return NextResponse.redirect(new URL("/dashboard", request.url));
+    }
   }
-  if (path.startsWith("/dashboard") && user?.role === "ADMIN") {
-    return NextResponse.redirect(new URL("/admin", request.url));
+
+  // ==========================================================
+  // 4. USER ROUTE PROTECTION
+  // ==========================================================
+  if (path.startsWith("/dashboard")) {
+    if (user?.role === "ADMIN") {
+      return NextResponse.redirect(new URL("/admin", request.url));
+    }
+    if (user?.role === "DEV") {
+      return NextResponse.redirect(new URL("/dev-dashboard", request.url));
+    }
   }
+
+  // ==========================================================
+  // 5. DEV ROUTE PROTECTION
+  // ==========================================================
+  if (path.startsWith("/dev-dashboard")) {
+    if (user?.role !== "DEV") {
+      if (user?.role === "ADMIN") {
+        return NextResponse.redirect(new URL("/admin", request.url));
+      }
+      if (user?.role === "USER") {
+        return NextResponse.redirect(new URL("/dashboard", request.url));
+      }
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
+  }
+
   return NextResponse.next();
 }
 
 export const config = {
   matcher: [
-    "/", 
+    "/",
     "/login",
     "/register",
     "/dashboard/:path*",
-    "/admin/:path*"
+    "/admin/:path*",
+    "/dev-dashboard/:path*"
   ],
 };

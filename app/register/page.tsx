@@ -379,8 +379,13 @@ export default function RegisterForm() {
 
       setSuccess("Account created successfully!");
 
+      // setTimeout(() => {
+      //   router.push(formData.role === "ADMIN" ? "/admin" : "/dashboard");
+      // }, 1500);
       setTimeout(() => {
-        router.push(formData.role === "ADMIN" ? "/admin" : "/dashboard");
+        if (formData.role === "ADMIN") router.push("/admin");
+        else if (formData.role === "DEV") router.push("/dev-dashboard");
+        else router.push("/dashboard");
       }, 1500);
 
     } catch (error: any) {

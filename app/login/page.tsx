@@ -120,8 +120,13 @@ export default function LoginPage() {
       // Toast success
       showSuccessToast("Login Successful");
 
-      // Redirect by role
-      router.push(role === "ADMIN" ? "/admin" : "/dashboard");
+      if (role === "ADMIN") {
+          router.push("/admin");
+        } else if (role === "DEV") {
+          router.push("/dev-dashboard");
+        } else {
+          router.push("/dashboard");
+        }
     } catch (error: any) {
       let message = "Invalid email or password.";
 
