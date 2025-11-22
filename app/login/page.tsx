@@ -80,11 +80,7 @@ export default function LoginPage() {
       // Fetch user role from Firestore
       const userDocSnap = await getDoc(doc(db, "users", user.uid));
       if (!userDocSnap.exists()) {
-        toast({
-          variant: "destructive",
-          title: "Account Error",
-          description: "User record not found.",
-        });
+        showErrorToast("User record not found.");
         setIsLoading(false);
         return;
       }
