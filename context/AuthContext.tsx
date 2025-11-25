@@ -1,5 +1,6 @@
 import { createContext, useContext, ReactNode, useState, useEffect } from 'react';
-import { getAuth, User, onAuthStateChanged } from 'firebase/auth';
+import { User } from 'firebase/auth';
+import { authService } from '@/services/firebase/AuthService';
 
 interface AuthContextType {
   currentUser: User | null;
@@ -20,8 +21,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const auth = getAuth();
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    // Use AuthService singleton for auth state listener
+    const unsubscribe = authService.onAuthStateChanged((user) => {
       setCurrentUser(user);
       setLoading(false);
     });

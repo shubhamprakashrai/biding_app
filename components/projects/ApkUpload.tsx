@@ -1,9 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { Button } from './ui/button';
+import { Button } from '@/components/ui/button';
 import { Upload, X, Loader2 } from 'lucide-react';
-import { storage } from '@/app/firebase/firebase';
+import { storage } from '@/services/firebase/FirebaseService';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 
 interface ApkUploadProps {

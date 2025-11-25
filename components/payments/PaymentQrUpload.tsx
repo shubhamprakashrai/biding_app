@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { Upload, X, Check } from 'lucide-react';
-import { Button } from './ui/button';
+import { Button } from '@/components/ui/button';
 
 interface PaymentQrUploadProps {
   projectId: string;

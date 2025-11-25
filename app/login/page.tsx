@@ -2,16 +2,11 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Eye, EyeOff, LogIn, Mail, Lock } from "lucide-react";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth, db } from "@/app/firebase/firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { Eye, EyeOff, Mail, Lock } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useAuthStore } from "@/store/authStore";
-import GoogleLoginButton from "@/components/GoogleLoginButton";
-import Cookies from "js-cookie";
-import { showSuccessToast, showErrorToast } from "@/utils/auth/authToast";
-
+import { useAuthViewModel } from "@/viewmodels/AuthViewModel";
+import { GoogleLoginButton } from "@/components/auth";
+import { showSuccessToast, showErrorToast } from "@/lib/toast";
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({
@@ -25,14 +20,10 @@ export default function LoginPage() {
   });
 
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
 
   const router = useRouter();
-  const setUser = useAuthStore((state) => state.setUser);
+  const { signInWithEmail, isLoading, getRedirectPath } = useAuthViewModel();
 
-  // ---------------------------------------------
-  // HANDLE INPUT CHANGE + CLEAR FIELD ERROR
-  // ---------------------------------------------
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
 
@@ -41,20 +32,15 @@ export default function LoginPage() {
       [name]: value,
     }));
 
-    // Clear error for this field
     setErrors((prev) => ({
       ...prev,
       [name]: "",
     }));
   };
 
-  // ---------------------------------------------
-  // LOGIN SUBMIT
-  // ---------------------------------------------
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Client-side validation
     let newErrors: any = {};
     if (!formData.email) newErrors.email = "Email is required.";
     if (!formData.password) newErrors.password = "Password is required.";
@@ -65,85 +51,31 @@ export default function LoginPage() {
       return;
     }
 
-    setIsLoading(true);
-
     try {
-      // Firebase login
-      const userCredential = await signInWithEmailAndPassword(
-        auth,
-        formData.email,
-        formData.password
-      );
+      const result = await signInWithEmail({
+        email: formData.email,
+        password: formData.password
+      });
 
-      const user = userCredential.user;
-
-      // Fetch user role from Firestore
-      const userDocSnap = await getDoc(doc(db, "users", user.uid));
-      if (!userDocSnap.exists()) {
-        showErrorToast("User record not found.");
-        setIsLoading(false);
-        return;
-      }
-
-      const userData = userDocSnap.data();
-      const role = userData.role || "USER";
-
-      // Firebase tokens
-      const accessToken = user.stsTokenManager.accessToken;
-      const refreshToken = user.stsTokenManager.refreshToken;
-
-      // Create user object
-      const userInfo = {
-        uid: user.uid,
-        email: user.email || "",
-        name: userData.name || user.email?.split("@")[0] || "User",
-        role,
-        accessToken,
-        refreshToken,
-      };
-
-      // Save locally
-      localStorage.setItem("user", JSON.stringify(userInfo));
-      localStorage.setItem("accessToken", accessToken);
-      localStorage.setItem("refreshToken", refreshToken);
-
-      // Save cookie for middleware
-      Cookies.set("user", JSON.stringify(userInfo), { expires: 7 });
-
-      // Save Zustand
-      setUser(userInfo);
-
-      // Toast success
       showSuccessToast("Login Successful");
 
-      if (role === "ADMIN") {
-          router.push("/admin");
-        } else if (role === "DEV") {
-          router.push("/dev-dashboard");
-        } else {
-          router.push("/dashboard");
-        }
+      // Get redirect path based on user role
+      const redirectPath = result.user.role === 'ADMIN'
+        ? '/admin'
+        : result.user.role === 'DEV'
+          ? '/dev-dashboard'
+          : '/dashboard';
+
+      router.push(redirectPath);
     } catch (error: any) {
-      let message = "Invalid email or password.";
-
-      if (error.code === "auth/user-not-found" || error.code === "auth/wrong-password") {
-        message = "Invalid email or password.";
-        setErrors((prev) => ({
-          ...prev,
-          email: "Invalid email or password",
-          password: "Invalid email or password",
-        }));
-      }
-
       showErrorToast("Invalid credentials");
-    } finally {
-      setIsLoading(false);
+      setErrors({
+        email: "Invalid email or password",
+        password: "Invalid email or password",
+      });
     }
   };
 
-  // ---------------------------------------------
-  // RETURN UI
-  // ---------------------------------------------
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-sm border p-8 space-y-6">
@@ -152,7 +84,6 @@ export default function LoginPage() {
         </h1>
         <p className="text-gray-500 text-center">Sign in to your account</p>
 
-        {/* Google Login */}
         <GoogleLoginButton />
 
         <div className="relative">
@@ -164,9 +95,7 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* FORM */}
         <form className="space-y-6" onSubmit={handleSubmit}>
-          {/* Email */}
           <div>
             <label className="block text-sm font-medium text-gray-700">Email address</label>
             <div className="relative">
@@ -176,7 +105,7 @@ export default function LoginPage() {
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
-                className={`w-full pl-10 pr-3 py-3 rounded-xl border focus:ring-2 
+                className={`w-full pl-10 pr-3 py-3 rounded-xl border focus:ring-2
                   ${errors.email ? "border-red-500 focus:ring-red-500" : "border-gray-300 focus:ring-emerald-500"}
                 `}
                 placeholder="Enter your email"
@@ -187,7 +116,6 @@ export default function LoginPage() {
             )}
           </div>
 
-          {/* Password */}
           <div>
             <label className="block text-sm font-medium text-gray-700">Password</label>
             <div className="relative">
@@ -197,13 +125,12 @@ export default function LoginPage() {
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
-                className={`w-full pl-10 pr-10 py-3 rounded-xl border focus:ring-2 
+                className={`w-full pl-10 pr-10 py-3 rounded-xl border focus:ring-2
                   ${errors.password ? "border-red-500 focus:ring-red-500" : "border-gray-300 focus:ring-emerald-500"}
                 `}
                 placeholder="Enter your password"
               />
 
-              {/* show/hide icon */}
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
@@ -218,7 +145,6 @@ export default function LoginPage() {
             )}
           </div>
 
-          {/* Submit */}
           <button
             type="submit"
             disabled={isLoading}
@@ -227,7 +153,6 @@ export default function LoginPage() {
             {isLoading ? "Signing in..." : "Sign In"}
           </button>
 
-          {/* Sign Up Link */}
           <p className="text-center text-sm text-gray-600">
             Don't have an account?{" "}
             <Link href="/register" className="text-emerald-600 font-medium hover:text-emerald-500">

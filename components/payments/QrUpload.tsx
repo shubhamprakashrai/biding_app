@@ -1,14 +1,14 @@
 'use client';
 
 import { useState, useRef } from "react";
-import { db } from "@/app/firebase/firebase";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { db, storage } from "@/services/firebase/FirebaseService";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { doc, setDoc, arrayUnion } from "firebase/firestore";
 import { Loader2, Plus } from "lucide-react";
-import { Button } from "./ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface QrUploadProps {
   onUploadSuccess?: () => void;
@@ -35,7 +35,6 @@ export default function QrUpload({ onUploadSuccess }: QrUploadProps) {
 
     try {
       // 1. Upload file to Firebase Storage
-      const storage = getStorage();
       const storageRef = ref(storage, `qr_codes/${Date.now()}-${currentQr.file.name}`);
       await uploadBytes(storageRef, currentQr.file);
       const downloadURL = await getDownloadURL(storageRef);

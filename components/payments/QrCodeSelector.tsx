@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { doc, updateDoc, onSnapshot, serverTimestamp } from 'firebase/firestore';
-import { db } from '@/app/firebase/firebase';
+import { db } from '@/services/firebase/FirebaseService';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2 } from 'lucide-react';
 

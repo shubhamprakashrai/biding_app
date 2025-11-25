@@ -3,23 +3,18 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { auth, db } from '@/app/firebase/firebase';
-import { doc, setDoc } from 'firebase/firestore';
 import { FiUser, FiMail } from 'react-icons/fi';
 import Link from 'next/link';
-import { InputField, PasswordField } from '@/components/form';
-import { validateRegisterForm } from '@/utils/auth/validateRegisterForm';
-import { getAuthErrorMessage } from '@/utils/auth/getAuthErrorMessage';
-import GoogleLoginButton from '@/components/GoogleLoginButton';
+import { InputField, PasswordField } from '@/components/forms';
+import { validateRegisterForm } from '@/lib/validation';
+import { GoogleLoginButton } from '@/components/auth';
 import { RegisterFormData } from '@/types/RegisterFormTypes';
-import { useAuthStore } from '@/store/authStore';
-import Cookies from "js-cookie";
-import { showSuccessToast, showErrorToast } from "@/utils/auth/authToast";
+import { useAuthViewModel } from '@/viewmodels/AuthViewModel';
+import { showSuccessToast, showErrorToast } from "@/lib/toast";
 
 export default function RegisterForm() {
   const router = useRouter();
-  const setUser = useAuthStore(state => state.setUser);
+  const { registerWithEmail, isLoading } = useAuthViewModel();
 
   const [formData, setFormData] = useState<RegisterFormData>({
     name: "",
@@ -31,17 +26,13 @@ export default function RegisterForm() {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [success, setSuccess] = useState("");
-  const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e: any) => {
-    // setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
     const { name, value } = e.target;
 
-    // Update form data
     setFormData(prev => ({ ...prev, [name]: value }));
 
-    // Clear ONLY that field's error
     setErrors(prev => ({
       ...prev,
       [name]: ""
@@ -55,67 +46,29 @@ export default function RegisterForm() {
 
     if (Object.keys(validationErrors).length > 0) return;
 
-    setLoading(true);
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
-      console.log('User registered with UID:', userCredential.user, userCredential.user.stsTokenManager);
-      await updateProfile(userCredential.user, { displayName: formData.name });
-
-      await setDoc(doc(db, 'users', userCredential.user.uid), {
-        uid: userCredential.user.uid,
-        ...formData,
-        createdAt: new Date(),
-      });
-      // Extract tokens
-      const user = userCredential.user;
-      const accessToken = user.stsTokenManager.accessToken;
-      const refreshToken = user.stsTokenManager.refreshToken;
-
-      // ⬇️ Save tokens to localStorage
-      localStorage.setItem("accessToken", accessToken);
-      localStorage.setItem("refreshToken", refreshToken);
-
-      // Optional: Save entire user object
-      localStorage.setItem(
-        "user",
-        JSON.stringify({
-          uid: user.uid,
-          name: formData.name,
-          email: formData.email,
-          role: formData.role,
-        })
-      );
-      setUser({
-        uid: userCredential.user.uid,
-        name: formData.name,
+      const result = await registerWithEmail({
         email: formData.email,
+        password: formData.password,
+        name: formData.name,
         role: formData.role
       });
-      Cookies.set("user", JSON.stringify({
-        uid: userCredential.user.uid,
-        name: formData.name,
-        email: formData.email,
-        role: formData.role,
-        accessToken: userCredential.user.stsTokenManager.accessToken,
-        refreshToken: userCredential.user.stsTokenManager.refreshToken,
-      }), { expires: 7 });
 
       setSuccess("Account created successfully!");
       showSuccessToast("Account created successfully!");
-      // setTimeout(() => {
-      //   router.push(formData.role === "ADMIN" ? "/admin" : "/dashboard");
-      // }, 1500);
+
       setTimeout(() => {
-        if (formData.role === "ADMIN") router.push("/admin");
-        else if (formData.role === "DEV") router.push("/dev-dashboard");
-        else router.push("/dashboard");
+        const redirectPath = result.user.role === "ADMIN"
+          ? "/admin"
+          : result.user.role === "DEV"
+            ? "/dev-dashboard"
+            : "/dashboard";
+        router.push(redirectPath);
       }, 1500);
 
     } catch (error: any) {
-      setErrors({ form: getAuthErrorMessage(error.code) });
-      showErrorToast("Invalid credentials")
-    } finally {
-      setLoading(false);
+      setErrors({ form: error.message || "Registration failed" });
+      showErrorToast("Registration failed");
     }
   };
 
@@ -132,7 +85,7 @@ export default function RegisterForm() {
             <h2 className="text-3xl font-bold text-gray-900">Create Account</h2>
             <p className="mt-2 text-sm text-gray-600">Join us in just a few steps.</p>
           </div>
-          {/* Google Sign In Button */}
+
           <div className="mt-6 mb-6">
             <GoogleLoginButton />
           </div>
@@ -145,6 +98,7 @@ export default function RegisterForm() {
               <span className="px-2 bg-white text-gray-500">Or continue with details</span>
             </div>
           </div>
+
           <AnimatePresence>
             {errors.form && (
               <motion.div className="mb-6 p-4 bg-red-50 text-red-700 rounded-lg flex items-start">
@@ -203,18 +157,17 @@ export default function RegisterForm() {
               placeholder="Enter your confirm password"
             />
 
-            {/* Original button with SAME styles */}
             <button
               type="submit"
-              disabled={loading}
-              className={`group relative w-full flex justify-center py-3 px-4 border border-transparent 
-            text-sm font-medium rounded-xl text-white 
-            bg-gradient-to-r from-emerald-500 to-teal-600 
-            hover:shadow-md hover:shadow-emerald-100 
-            focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 
-            transition-all duration-200 ${loading ? "opacity-70 cursor-not-allowed" : ""}`}
+              disabled={isLoading}
+              className={`group relative w-full flex justify-center py-3 px-4 border border-transparent
+            text-sm font-medium rounded-xl text-white
+            bg-gradient-to-r from-emerald-500 to-teal-600
+            hover:shadow-md hover:shadow-emerald-100
+            focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500
+            transition-all duration-200 ${isLoading ? "opacity-70 cursor-not-allowed" : ""}`}
             >
-              {loading ? "Creating Account..." : "Create Account"}
+              {isLoading ? "Creating Account..." : "Create Account"}
             </button>
 
             <div className="text-center">

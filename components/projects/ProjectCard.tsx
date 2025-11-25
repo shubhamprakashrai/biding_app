@@ -2,20 +2,18 @@ import { Project } from '@/types';
 import { Calendar, DollarSign, Clock, MessageSquare, Edit2, ArrowRight, ChevronDown, Check, X, Download, CreditCard, Loader2, Copy, QrCode, CheckCircle, AlertTriangle, Info, Upload } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState, useRef, useEffect } from 'react';
-import { Button } from './ui/button';
+import { Button } from '@/components/ui/button';
 import dynamic from 'next/dynamic';
 import { doc, updateDoc, serverTimestamp, getDoc, Timestamp, FieldValue } from 'firebase/firestore';
 import { toast } from 'sonner';
-import { db } from '@/app/firebase/firebase';
-import PaymentDialog from './PaymentDialog';
-import PaymentHistoryDialog from './PaymentHistoryDialog';
+import { db } from '@/services/firebase/FirebaseService';
+import { PaymentDialog, PaymentHistoryDialog, PaymentDetails, PaymentDetailsDialog, PaymentStatusHistory } from '@/components/payments';
 import DeliverablesUploadModal from './DeliverablesUpload';
 import DeliverablesViewer from './DeliverablesViewer';
-import { PaymentDetails, PaymentDetailsDialog, PaymentStatusHistory } from './PaymentDetailsDialog';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 // Dynamically import QrCodeSelector to avoid SSR issues with Firestore
-const QrCodeSelector = dynamic(() => import('./QrCodeSelector'), {
+const QrCodeSelector = dynamic(() => import('@/components/payments/QrCodeSelector'), {
   ssr: false,
   loading: () => (
     <div className="flex items-center justify-center p-4">

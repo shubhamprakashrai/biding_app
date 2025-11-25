@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useEffect } from "react";
-import { db } from "@/app/firebase/firebase";
+import { db } from "@/services/firebase/FirebaseService";
 import { doc, getDoc } from "firebase/firestore";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { Button } from "./ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import { ExternalLink, RefreshCw, Loader2 } from "lucide-react";
 
 interface QrCode {

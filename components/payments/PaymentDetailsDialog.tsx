@@ -1,13 +1,13 @@
 "use client";
 
 import { useState,useEffect } from 'react';
-import { Button } from './ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
-import { Input } from './ui/input';
-import { Label } from './ui/label';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Image as ImageIcon, Upload, X, ArrowUpRight, Copy } from 'lucide-react';
 import Image from 'next/image';
-import { fetchAllUsers } from '@/utils/firebase/users';
+import { fetchAllUsers } from '@/lib/firebase/users';
 import { User } from "@/types";
 import { Timestamp } from 'firebase/firestore';
 import { toast } from 'sonner';

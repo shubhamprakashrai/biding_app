@@ -1,14 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import ProjectCard from '@/components/ProjectCard';
+import { ProjectCard } from '@/components/projects';
 import { projects as initialProjects, proposals as initialProposals, messages as initialMessages } from '@/data/dummy';
 import { Project, Proposal, Message } from '@/types';
 import { Users, Briefcase, FileText, MessageSquare, DollarSign, Image as ImageIcon } from 'lucide-react';
 import { collection, onSnapshot, doc, updateDoc } from 'firebase/firestore';
-import { db } from '../firebase/firebase';
-import QrUpload from '@/components/QrUpload';
-import QrCodeDropdown from '@/components/QrCodeDropdown';
+import { db } from '@/services/firebase/FirebaseService';
+import { QrUpload, QrCodeDropdown } from '@/components/payments';
 
 export default function AdminPage() {
   const [projects, setProjects] = useState<Project[]>(initialProjects);

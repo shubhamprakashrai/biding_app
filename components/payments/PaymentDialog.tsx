@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { doc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { db, storage } from "@/app/firebase/firebase";
+import { db, storage } from "@/services/firebase/FirebaseService";
 import { Copy, Check } from "lucide-react";
 
 interface PaymentDialogProps {

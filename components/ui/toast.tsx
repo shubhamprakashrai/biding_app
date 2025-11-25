@@ -52,6 +52,9 @@ const ToastClose = ToastPrimitives.Close;
 const ToastTitle = ToastPrimitives.Title;
 const ToastDescription = ToastPrimitives.Description;
 
+type ToastProps = React.ComponentPropsWithoutRef<typeof Toast>;
+type ToastActionElement = React.ReactElement<typeof ToastAction>;
+
 export {
   ToastProvider,
   Toast,
@@ -61,3 +64,5 @@ export {
   ToastTitle,
   ToastDescription,
 };
+
+export type { ToastProps, ToastActionElement };
