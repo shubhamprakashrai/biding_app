@@ -80,11 +80,7 @@ export default function LoginPage() {
       // Fetch user role from Firestore
       const userDocSnap = await getDoc(doc(db, "users", user.uid));
       if (!userDocSnap.exists()) {
-        toast({
-          variant: "destructive",
-          title: "Account Error",
-          description: "User record not found.",
-        });
+        showErrorToast("User record not found.");
         setIsLoading(false);
         return;
       }
@@ -120,8 +116,13 @@ export default function LoginPage() {
       // Toast success
       showSuccessToast("Login Successful");
 
-      // Redirect by role
-      router.push(role === "ADMIN" ? "/admin" : "/dashboard");
+      if (role === "ADMIN") {
+          router.push("/admin");
+        } else if (role === "DEV") {
+          router.push("/dev-dashboard");
+        } else {
+          router.push("/dashboard");
+        }
     } catch (error: any) {
       let message = "Invalid email or password.";
 
