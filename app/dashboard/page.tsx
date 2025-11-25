@@ -1,23 +1,41 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { ProjectCard, ProjectForm } from '@/components/projects';
+import { useState, useEffect, useMemo } from 'react';
+import { ProjectCard, ProjectForm, ProjectFilter } from '@/components/projects';
 import { Project, Message, User } from '@/types';
 import { Plus, Briefcase, Clock, CheckCircle, Zap } from 'lucide-react';
-import { collection, query, where, getDocs } from "firebase/firestore";
-import { db } from '@/services/firebase/FirebaseService';
+import { useProjectsViewModel } from '@/viewmodels/ProjectsViewModel';
+import { useProjectFilterViewModel } from '@/viewmodels/ProjectFilterViewModel';
 import { authService } from '@/services/firebase/AuthService';
 
 export default function DashboardPage() {
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [messages, setMessages] = useState<Message[]>([]);
+  // Use global projects store
+  const {
+    userProjects,
+    messages,
+    isLoading,
+    isInitialized,
+    initializeUserProjects,
+    addMessage,
+    addProject,
+    updateProject
+  } = useProjectsViewModel();
+
+  // Use filter store
+  const { filters, applyFilters, getActiveFilterCount } = useProjectFilterViewModel();
+
+  // Apply filters to user projects - include filters in dependency to trigger re-render on filter change
+  const filteredProjects = useMemo(() => {
+    return applyFilters(userProjects);
+  }, [userProjects, filters, applyFilters]);
+
   const [isProjectFormOpen, setIsProjectFormOpen] = useState(false);
   const [selectedProjectForChat, setSelectedProjectForChat] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [authLoading, setAuthLoading] = useState(true);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
 
-  // Load current user
+  // Load current user and initialize projects
   useEffect(() => {
     const unsubscribe = authService.onAuthStateChanged(async (user) => {
       if (user) {
@@ -29,29 +47,14 @@ export default function DashboardPage() {
         };
         setCurrentUser(userData);
 
-        // Fetch user-specific projects from Firestore
-        const q = query(collection(db, "projects"), where("userId", "==", user.uid));
-        const snap = await getDocs(q);
-        const projectsData = snap.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as Project[];
-        setProjects(projectsData);
-
-        // Optionally fetch messages for these projects
-        const messagesSnap = await getDocs(collection(db, "messages"));
-        const messagesData = messagesSnap.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as Message[];
-        setMessages(messagesData);
-
-        setLoading(false);
+        // Initialize user projects from global store (cached)
+        initializeUserProjects(user.uid);
       }
+      setAuthLoading(false);
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [initializeUserProjects]);
 
   const handleEditProject = (project: Project) => {
     setEditingProject(project);
@@ -75,17 +78,25 @@ export default function DashboardPage() {
       timestamp: new Date().toISOString()
     };
 
-    setMessages(prev => [...prev, newMessage]);
+    addMessage(newMessage);
   };
 
-  if (loading) return <div className="p-10 text-center">Loading...</div>;
-  if (!currentUser) return <div className="p-10 text-center">User not logged in</div>;
+  // Show loading only on initial load
+  if (authLoading || (isLoading && !isInitialized)) {
+    return <div className="p-10 text-center">Loading...</div>;
+  }
 
-  const userProjects = projects.filter(p => p.userId === currentUser.id);
-  const selectedProject = projects.find(p => p.id === selectedProjectForChat);
+  if (!currentUser) {
+    return <div className="p-10 text-center">User not logged in</div>;
+  }
+
+  const selectedProject = userProjects.find(p => p.id === selectedProjectForChat);
+
+  const activeFilterCount = getActiveFilterCount();
 
   const projectStats = {
     total: userProjects.length,
+    filtered: filteredProjects.length,
     pending: userProjects.filter(p => p.status === 'PENDING').length,
     inProgress: userProjects.filter(p => p.status === 'IN_PROGRESS').length,
     completed: userProjects.filter(p => p.status === 'COMPLETED').length,
@@ -137,6 +148,9 @@ export default function DashboardPage() {
           })}
         </div>
 
+        {/* Project Filters - Hide email filter for regular users since they only see their own projects */}
+        <ProjectFilter showEmailFilter={false} />
+
         {/* Project List */}
         <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-sm border border-gray-100 mb-8 overflow-hidden transform transition-all duration-300 hover:shadow-md">
           <div className="p-6 border-b border-gray-100 flex justify-between items-center">
@@ -145,13 +159,17 @@ export default function DashboardPage() {
               <span>My Apps</span>
             </h2>
             <div className="text-sm text-gray-500">
-              Showing <span className="font-medium text-gray-700">{userProjects.length}</span> {userProjects.length > 1 ? 'apps' : 'app'}
+              Showing <span className="font-medium text-gray-700">{projectStats.filtered}</span> of{' '}
+              <span className="font-medium text-gray-700">{projectStats.total}</span> {projectStats.total > 1 ? 'apps' : 'app'}
+              {activeFilterCount > 0 && (
+                <span className="ml-2 text-emerald-600">({activeFilterCount} filter{activeFilterCount > 1 ? 's' : ''} applied)</span>
+              )}
             </div>
           </div>
           <div className="p-6">
-            {userProjects.length > 0 ? (
+            {filteredProjects.length > 0 ? (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-                {userProjects.map(project => (
+                {filteredProjects.map(project => (
                   <ProjectCard
                     key={project.id}
                     project={project}
@@ -160,6 +178,14 @@ export default function DashboardPage() {
                     onViewMessages={handleViewMessages}
                   />
                 ))}
+              </div>
+            ) : userProjects.length > 0 ? (
+              <div className="text-center py-12 px-4">
+                <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                  <Briefcase className="h-8 w-8 text-gray-400" />
+                </div>
+                <h3 className="text-lg font-medium text-gray-800 mb-2">No apps match your filters</h3>
+                <p className="text-gray-500">Try adjusting your filters to see more results.</p>
               </div>
             ) : (
               <div className="text-center py-12 px-4">
@@ -191,11 +217,9 @@ export default function DashboardPage() {
         project={editingProject}
         onSubmit={(updatedProject) => {
           if (editingProject) {
-            setProjects(prev =>
-              prev.map(p => (p.id === updatedProject.id ? updatedProject : p))
-            );
+            updateProject(updatedProject);
           } else {
-            setProjects(prev => [updatedProject, ...prev]);
+            addProject(updatedProject);
           }
           setEditingProject(null);
         }}
