@@ -1,10 +1,10 @@
 'use client';
 import { useState, useRef, ChangeEvent, useEffect } from 'react';
 import { X, Plus, Upload, Trash2, Copy } from 'lucide-react';
-import { auth, db, storage } from '@/app/firebase/firebase';
+import { db, storage } from '@/services/firebase/FirebaseService';
+import { authService } from '@/services/firebase/AuthService';
 import { doc, setDoc, collection } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import { getAuth } from 'firebase/auth';
 import { Project } from '@/types';
 
 interface ProjectFormProps {
@@ -185,8 +185,7 @@ export default function ProjectForm({ isOpen, onClose, project, onSubmit }: Proj
     setLoading(true);
 
     try {
-      const auth = getAuth();
-      const user = auth.currentUser;
+      const user = authService.getCurrentUser();
       if (!user) {
         alert('Login first!');
         return;

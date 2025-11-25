@@ -1,53 +1,36 @@
 'use client';
 
 import { useState, useEffect } from "react";
-import { db } from "@/app/firebase/firebase";
-import { doc, getDoc } from "firebase/firestore";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { Button } from "./ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import { ExternalLink, RefreshCw, Loader2 } from "lucide-react";
-
-interface QrCode {
-  id: string;
-  name: string;
-  url: string;
-}
+import { useQrCodesViewModel } from "@/viewmodels/QrCodesViewModel";
 
 interface QrCodeDropdownProps {
   onRefresh?: () => void;
 }
 
 export default function QrCodeDropdown({ onRefresh }: QrCodeDropdownProps) {
-  const [qrCodes, setQrCodes] = useState<QrCode[]>([]);
-  const [selectedQr, setSelectedQr] = useState<string>("");
-  const [loading, setLoading] = useState(true);
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  // Use global QR codes store
+  const {
+    qrCodes,
+    isLoading,
+    isInitialized,
+    initialize,
+    forceRefresh
+  } = useQrCodesViewModel();
 
-  const fetchQrCodes = async () => {
-    setLoading(true);
-    try {
-      const docRef = doc(db, "adminData", "qrCodes");
-      const docSnap = await getDoc(docRef);
-      
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        setQrCodes(data.qrCodes || []);
-      }
-    } catch (error) {
-      console.error("Error fetching QR codes:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [selectedQr, setSelectedQr] = useState<string>("");
+
+  // Initialize QR codes from global store (cached)
+  useEffect(() => {
+    initialize();
+  }, [initialize]);
 
   const handleRefresh = () => {
-    setRefreshTrigger(prev => prev + 1);
+    forceRefresh();
     if (onRefresh) onRefresh();
   };
-
-  useEffect(() => {
-    fetchQrCodes();
-  }, [refreshTrigger]);
 
   const handleViewQr = () => {
     if (selectedQr) {
@@ -58,7 +41,8 @@ export default function QrCodeDropdown({ onRefresh }: QrCodeDropdownProps) {
     }
   };
 
-  if (loading) {
+  // Show loading only on initial load
+  if (isLoading && !isInitialized) {
     return <div className="p-4 text-center text-gray-500">Loading QR codes...</div>;
   }
 
@@ -70,14 +54,14 @@ export default function QrCodeDropdown({ onRefresh }: QrCodeDropdownProps) {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-medium">QR Codes</h3>
-        <Button 
-          variant="outline" 
-          size="sm" 
+        <Button
+          variant="outline"
+          size="sm"
           onClick={handleRefresh}
-          disabled={loading}
+          disabled={isLoading}
           className="flex items-center gap-1"
         >
-          {loading ? (
+          {isLoading ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
               Refreshing...
@@ -103,7 +87,7 @@ export default function QrCodeDropdown({ onRefresh }: QrCodeDropdownProps) {
             ))}
           </SelectContent>
         </Select>
-        <Button 
+        <Button
           onClick={handleViewQr}
           disabled={!selectedQr}
           variant="outline"
@@ -119,9 +103,9 @@ export default function QrCodeDropdown({ onRefresh }: QrCodeDropdownProps) {
             <span className="font-medium">
               {qrCodes.find(qr => qr.id === selectedQr)?.name}
             </span>
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => window.open(qrCodes.find(qr => qr.id === selectedQr)?.url, '_blank')}
               className="text-blue-600 hover:bg-blue-50"
             >

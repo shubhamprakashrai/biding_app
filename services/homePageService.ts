@@ -1,4 +1,4 @@
-import { db } from '@/app/firebase/firebase';
+import { db } from '@/services/firebase/FirebaseService';
 import { doc, getDoc, setDoc, onSnapshot, serverTimestamp } from 'firebase/firestore';
 import { HomePageData, defaultHomePageData } from '@/types/homePage';
 

@@ -1,5 +1,5 @@
-import Navigation from '@/components/Navigation';
-import Hero from '@/components/Hero';
+import { Navigation } from '@/components/layout';
+import { Hero } from '@/components/layout';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {

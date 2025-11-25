@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { db, storage } from "@/app/firebase/firebase";
+import { db, storage } from "@/services/firebase/FirebaseService";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { updateDoc, doc, arrayUnion, serverTimestamp } from "firebase/firestore";
 import { X } from "lucide-react";

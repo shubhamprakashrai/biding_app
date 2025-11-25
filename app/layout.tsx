@@ -2,7 +2,7 @@ import './globals.css';
 import type { Metadata } from 'next';
 // Viewport is automatically inferred in Next.js 13+
 import { Inter } from 'next/font/google';
-import Layout from '@/components/Layout';
+import { Layout } from '@/components/layout';
 import { Toaster } from "@/components/ui/toaster";
 
 const inter = Inter({ subsets: ['latin'] });

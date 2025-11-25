@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { db } from "@/app/firebase/firebase";
+import { db } from "@/services/firebase/FirebaseService";
 import { collection, getDocs, DocumentData, doc, updateDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { User, UserRole } from "@/types";
-import { showSuccessToast, showErrorToast } from "@/utils/auth/authToast";
-import { fetchAllUsers } from "@/utils/firebase/users"; 
+import { showSuccessToast, showErrorToast } from "@/lib/toast";
+import { fetchAllUsers } from "@/lib/firebase/users"; 
 
 export default function ListUsersPage() {
     const [users, setUsers] = useState<User[]>([]);

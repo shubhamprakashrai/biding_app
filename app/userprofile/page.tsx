@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { doc, getDoc } from "firebase/firestore";
-import { db } from "@/app/firebase/firebase";
-import { auth } from "@/app/firebase/firebase";
+import { db, auth } from "@/services/firebase/FirebaseService";
 
 interface UserData {
   uid: string;

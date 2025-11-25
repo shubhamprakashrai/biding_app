@@ -3,29 +3,24 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { Menu, X, Home, LogIn, UserPlus, LayoutDashboard, Settings, ChevronDown,Cog } from 'lucide-react';
-import { signOut, onAuthStateChanged } from 'firebase/auth';
-import { auth, db } from '@/app/firebase/firebase';
-import { doc, getDoc } from 'firebase/firestore';
-import Cookies from "js-cookie";
-interface UserData {
-  email: string;
-  role: 'USER' | 'ADMIN'| 'DEV';
-  name: string;
-  photoURL?: string;
-  uid: string;
-}
+import { Menu, X, Home, LogIn, UserPlus, LayoutDashboard, Settings, ChevronDown, Cog } from 'lucide-react';
+import { useAuthViewModel } from '@/viewmodels/AuthViewModel';
+import { authService } from '@/services/firebase/AuthService';
+import { userRepository } from '@/services/firebase/UserRepository';
+import { UserWithTokens } from '@/services/firebase/UserRepository';
 
 export default function Navigation() {
-  const [currentUser, setCurrentUser] = useState<UserData | null>(null);
+  const [currentUser, setCurrentUser] = useState<UserWithTokens | null>(null);
   const [loading, setLoading] = useState(true);
   const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
-  
+
   const pathname = usePathname();
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  
+
+  const { signOut } = useAuthViewModel();
+
   const isActive = (path: string) => pathname === path;
 
   const publicLinks = [
@@ -48,48 +43,32 @@ export default function Navigation() {
     { href: '/', label: 'Home', icon: Home },
     { href: '/dev-dashboard', label: 'Dev Panel', icon: Cog },
   ];
+
   const getLinks = () => {
-  if (!currentUser) return publicLinks;
+    if (!currentUser) return publicLinks;
 
-  switch (currentUser.role) {
-    case "ADMIN":
-      return adminLinks;
-
-    case "DEV":
-      return devLinks;
-
-    case "USER":
-    default:
-      return userLinks;
-  }
-};
+    switch (currentUser.role) {
+      case "ADMIN":
+        return adminLinks;
+      case "DEV":
+        return devLinks;
+      case "USER":
+      default:
+        return userLinks;
+    }
+  };
 
   useEffect(() => {
     let isMounted = true;
-    
+
     const initializeAuth = async () => {
       try {
         // Check for user data in localStorage on component mount
-        if (typeof window !== 'undefined') {
-          const userData = localStorage.getItem('user');
-          console.log('Initial user data from localStorage:', userData);
-          
-          if (userData) {
-            try {
-              const parsedData = JSON.parse(userData);
-              console.log('Parsed user data:', parsedData);
-              if (isMounted) {
-                setCurrentUser(parsedData);
-              }
-            } catch (parseError) {
-              console.error('Error parsing user data:', parseError);
-              localStorage.removeItem('user'); // Remove corrupted data
-            }
-          } else {
-            console.log('No user data found in localStorage');
-          }
+        const storedUser = authService.getStoredUser();
+        if (storedUser && isMounted) {
+          setCurrentUser(storedUser);
         }
-        
+
         if (isMounted) {
           setLoading(false);
         }
@@ -101,47 +80,44 @@ export default function Navigation() {
       }
     };
 
-    // Set up auth state listener
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    // Set up auth state listener using AuthService
+    const unsubscribe = authService.onAuthStateChanged(async (firebaseUser) => {
       try {
-        console.log('Auth state changed:', user);
-        if (user && isMounted) {
-          const userDoc = await getDoc(doc(db, 'users', user.uid));
-          if (userDoc.exists()) {
-            const userData = userDoc.data();
-            console.log('User data from Firestore:', userData);
-            const userInfo = {
-              email: userData.email || user.email || '',
-              name: userData.name || user.displayName || 'User',
+        if (firebaseUser && isMounted) {
+          // Fetch fresh user data from Firestore using UserRepository
+          const userData = await userRepository.getUserById(firebaseUser.uid);
+
+          if (userData) {
+            const userInfo: UserWithTokens = {
+              uid: userData.uid,
+              email: userData.email || firebaseUser.email || '',
+              name: userData.name || firebaseUser.displayName || 'User',
               role: userData.role || 'USER',
-              photoURL: userData.photoURL || user.photoURL || '',
-              uid: user.uid
+              photoURL: userData.photoURL || firebaseUser.photoURL || '',
             };
-            
+
             setCurrentUser(userInfo);
-            
+
             // Save to localStorage
             if (typeof window !== 'undefined') {
               localStorage.setItem('user', JSON.stringify(userInfo));
             }
           } else {
-            console.log('User document does not exist in Firestore');
             // Handle case where user exists in Auth but not in Firestore
-            const fallbackUserInfo = {
-              email: user.email || '',
-              name: user.displayName || 'User',
-              role: 'USER' as const,
-              photoURL: user.photoURL || '',
-              uid: user.uid
+            const fallbackUserInfo: UserWithTokens = {
+              uid: firebaseUser.uid,
+              email: firebaseUser.email || '',
+              name: firebaseUser.displayName || 'User',
+              role: 'USER',
+              photoURL: firebaseUser.photoURL || '',
             };
             setCurrentUser(fallbackUserInfo);
-            
+
             if (typeof window !== 'undefined') {
               localStorage.setItem('user', JSON.stringify(fallbackUserInfo));
             }
           }
-        } else if (!user && isMounted) {
-          console.log('No user signed in');
+        } else if (!firebaseUser && isMounted) {
           setCurrentUser(null);
           if (typeof window !== 'undefined') {
             localStorage.removeItem('user');
@@ -166,7 +142,7 @@ export default function Navigation() {
       const target = event.target as HTMLElement;
       const profileDropdown = target.closest('.profile-dropdown');
       const profileButton = target.closest('.profile-button');
-      
+
       if (!profileDropdown && !profileButton && isProfileOpen) {
         setIsProfileOpen(false);
       }
@@ -179,29 +155,16 @@ export default function Navigation() {
   }, [isProfileOpen]);
 
   const handleLogout = async () => {
-  try {
-    await signOut(auth);
-
-    // Clear Zustand store
-    setCurrentUser(null);
-    Cookies.remove("user");
-    // Remove all stored data
-    localStorage.removeItem("user");
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
-
-    // Optional: Clear everything (if preferred)
-    // localStorage.clear();
-
-    router.push("/");
-  } catch (error) {
-    console.error("Logout failed:", error);
-  }
-};
-
+    try {
+      await signOut();
+      setCurrentUser(null);
+      router.push("/");
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  };
 
   const handleImageError = (imageUrl: string) => {
-    console.log('Image failed to load:', imageUrl);
     setImageErrors(prev => {
       const newSet = new Set(prev);
       newSet.add(imageUrl);
@@ -213,24 +176,21 @@ export default function Navigation() {
     return photoURL && !imageErrors.has(photoURL);
   };
 
-  const UserAvatar = ({ size = 'small', user }: { size?: 'small' | 'large', user: UserData }) => {
+  const UserAvatar = ({ size = 'small', user }: { size?: 'small' | 'large', user: UserWithTokens }) => {
     const sizeClasses = size === 'small' ? 'w-8 h-8' : 'w-10 h-10';
     const textSizeClass = size === 'small' ? '' : 'text-lg';
-    
+
     if (shouldShowImage(user.photoURL)) {
       return (
-        <>
-          <img 
-            src={user.photoURL} 
-            alt={user.name || 'User'} 
-            className={`${sizeClasses} rounded-full object-cover border-2 border-white shadow-sm`}
-            onError={() => handleImageError(user.photoURL!)}
-            onLoad={() => console.log('Image loaded successfully:', user.photoURL)}
-          />
-        </>
+        <img
+          src={user.photoURL}
+          alt={user.name || 'User'}
+          className={`${sizeClasses} rounded-full object-cover border-2 border-white shadow-sm`}
+          onError={() => handleImageError(user.photoURL!)}
+        />
       );
     }
-    
+
     return (
       <div className={`${sizeClasses} rounded-full bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center text-emerald-600 font-medium ${textSizeClass}`}>
         {user.name?.charAt(0)?.toUpperCase() || 'U'}
@@ -292,7 +252,6 @@ export default function Navigation() {
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    console.log('Profile button clicked, current state:', isProfileOpen);
                     setIsProfileOpen(!isProfileOpen);
                   }}
                 >
@@ -310,7 +269,6 @@ export default function Navigation() {
                       <UserAvatar size="large" user={currentUser} />
                       <div>
                         <p className="text-sm font-medium text-gray-900">{currentUser.name}</p>
-
                         <p className="text-xs text-gray-500">
                           {currentUser.role === "ADMIN"
                             ? "Administrator"
@@ -319,7 +277,6 @@ export default function Navigation() {
                             : "User"}
                         </p>
                       </div>
-
                     </div>
                     <div className="py-1">
                       <Link
@@ -336,7 +293,7 @@ export default function Navigation() {
                             setIsMenuOpen(false);
                             setIsProfileOpen(false);
                           }}
-                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 
+                          className="block w-full text-left px-4 py-2 text-sm text-gray-700
                           hover:bg-gray-50 rounded-lg transition-colors"
                         >
                           List Users
@@ -355,7 +312,6 @@ export default function Navigation() {
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
-                          console.log('Logout button clicked');
                           handleLogout();
                         }}
                         className="block w-full text-left px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 rounded-b-lg transition-colors"
@@ -451,7 +407,6 @@ export default function Navigation() {
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        console.log('Mobile logout clicked');
                         handleLogout();
                       }}
                       className="block w-full text-left px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 rounded-lg mt-2 transition-colors"

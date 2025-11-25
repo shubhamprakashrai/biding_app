@@ -1,4 +1,3 @@
-// utils/auth/authToast.ts
 "use client";
 
 import { toast } from "@/hooks/use-toast";
@@ -10,7 +9,7 @@ export const showSuccessToast = (title: string, description?: string) => {
   toast({
     title,
     description,
-    variant: "default", // green (default)
+    variant: "default",
   });
 };
 
@@ -21,18 +20,18 @@ export const showErrorToast = (title: string, description?: string) => {
   toast({
     title,
     description,
-    variant: "destructive", // red
+    variant: "destructive",
   });
 };
 
 /**
- * Warning Toast (Yellow)
+ * Warning Toast (uses default variant - toast component only supports default/destructive)
  */
 export const showWarningToast = (title: string, description?: string) => {
   toast({
     title,
     description,
-    variant: "warning",
+    variant: "default",
   });
 };
 
