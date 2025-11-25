@@ -5,6 +5,7 @@ import { FcGoogle } from 'react-icons/fc';
 import { signInWithGoogle, db } from '@/app/firebase/firebase';
 import { useRouter } from 'next/navigation';
 import { doc, getDoc } from 'firebase/firestore';
+import Cookies from 'js-cookie';
 
 export default function GoogleLoginButton() {
   const router = useRouter();
@@ -33,14 +34,19 @@ export default function GoogleLoginButton() {
       
       console.log('Storing user data:', userToStore);
       localStorage.setItem('user', JSON.stringify(userToStore));
-      
+
+      // Set cookie for middleware authentication (required for dashboard access)
+      Cookies.set('user', JSON.stringify(userToStore), { expires: 7 });
+
       // Force a refresh to update the Navigation component
       window.dispatchEvent(new Event('storage'));
-      
+
       // Redirect based on role
       const userRole = userData?.role || 'USER';
       if (userRole === 'ADMIN') {
         router.push('/admin');
+      } else if (userRole === 'DEV') {
+        router.push('/dev-dashboard');
       } else {
         router.push('/dashboard');
       }

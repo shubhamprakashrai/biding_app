@@ -119,10 +119,11 @@ export default function Navigation() {
             };
             
             setCurrentUser(userInfo);
-            
-            // Save to localStorage
+
+            // Save to localStorage and cookie for middleware
             if (typeof window !== 'undefined') {
               localStorage.setItem('user', JSON.stringify(userInfo));
+              Cookies.set('user', JSON.stringify(userInfo), { expires: 7 });
             }
           } else {
             console.log('User document does not exist in Firestore');
@@ -135,9 +136,10 @@ export default function Navigation() {
               uid: user.uid
             };
             setCurrentUser(fallbackUserInfo);
-            
+
             if (typeof window !== 'undefined') {
               localStorage.setItem('user', JSON.stringify(fallbackUserInfo));
+              Cookies.set('user', JSON.stringify(fallbackUserInfo), { expires: 7 });
             }
           }
         } else if (!user && isMounted) {
@@ -145,6 +147,7 @@ export default function Navigation() {
           setCurrentUser(null);
           if (typeof window !== 'undefined') {
             localStorage.removeItem('user');
+            Cookies.remove('user');
           }
         }
       } catch (error) {
