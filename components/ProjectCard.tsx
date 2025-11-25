@@ -842,6 +842,18 @@ export default function ProjectCard({
           </div>
         )}
 
+
+
+ {project.deliverables && project.deliverables.length > 0 && (
+  <div className="mt-3">
+    <DeliverablesViewer 
+      deliverables={project.deliverables}
+      isAdmin={isAdmin}
+      paymentStatus={project.status}
+    />
+  </div>
+)}
+
 {project.status !== 'CANCELLED' && project.status !== 'PENDING' && (
   <div className="mt-4 space-y-2">
     {isAdmin ? (

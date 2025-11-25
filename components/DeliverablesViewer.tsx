@@ -26,7 +26,7 @@ export default function DeliverablesViewer({
 
   // Filter deliverables based on payment status
   const filteredDeliverables = deliverables.filter(deliverable => {
-    // Always show APK files
+    // Always show APK files to everyone
     if (deliverable.type === 'apk') return true;
     
     // For non-admin users, show ZIP and code only if payment is completed
