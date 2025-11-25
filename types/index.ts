@@ -9,7 +9,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: 'USER' | 'ADMIN';
+  role: 'USER' | 'ADMIN' | 'DEV';
 }
 
 export interface ProjectFile {
@@ -111,7 +111,7 @@ export interface Message {
   projectId: string;
   senderId: string;
   senderName: string;
-  senderRole: 'USER' | 'ADMIN';
+  senderRole: 'USER' | 'ADMIN' | 'DEV';
   content: string;
   timestamp: string;
 }

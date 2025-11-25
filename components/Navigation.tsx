@@ -329,6 +329,19 @@ export default function Navigation() {
                       >
                         Your Profile
                       </Link>
+                      {currentUser.role === 'ADMIN' && (
+                        <Link
+                          href="/list-users"
+                          onClick={() => {
+                            setIsMenuOpen(false);
+                            setIsProfileOpen(false);
+                          }}
+                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 
+                          hover:bg-gray-50 rounded-lg transition-colors"
+                        >
+                          List Users
+                        </Link>
+                      )}
                       <Link
                         href="/settings"
                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
@@ -423,6 +436,17 @@ export default function Navigation() {
                     >
                       Settings
                     </Link>
+
+                    <Link
+                      href="/list-users"
+                      onClick={() => {
+                        setIsMenuOpen(false);
+                        setIsProfileOpen(false);
+                      }}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                    >
+                      List Users
+                    </Link>
                     <button
                       onClick={(e) => {
                         e.preventDefault();
@@ -437,6 +461,7 @@ export default function Navigation() {
                   </div>
                 </div>
               )}
+
             </div>
           </div>
         )}
