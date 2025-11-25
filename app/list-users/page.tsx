@@ -6,6 +6,7 @@ import { collection, getDocs, DocumentData, doc, updateDoc } from "firebase/fire
 import { useRouter } from "next/navigation";
 import { User, UserRole } from "@/types";
 import { showSuccessToast, showErrorToast } from "@/utils/auth/authToast";
+import { fetchAllUsers } from "@/utils/firebase/users"; 
 
 export default function ListUsersPage() {
     const [users, setUsers] = useState<User[]>([]);
@@ -24,28 +25,40 @@ export default function ListUsersPage() {
     }, [router]);
 
     // Fetch users from Firestore
+    // useEffect(() => {
+    //     async function fetchUsers() {
+    //         try {
+    //             setLoading(true);
+    //             const usersRef = collection(db, "users");
+    //             const snapshot = await getDocs(usersRef);
+
+    //             const usersList: User[] = snapshot.docs.map((doc: DocumentData) => ({
+    //                 id: doc.id,
+    //                 ...doc.data(),
+    //             }));
+
+    //             setUsers(usersList);
+    //         } catch (error) {
+    //             console.error("Error fetching users:", error);
+    //         }finally {
+    //         setLoading(false);
+    //     }
+    //     }
+
+    //     fetchUsers();
+    // }, []);
+
+
     useEffect(() => {
-        async function fetchUsers() {
-            try {
-                setLoading(true);
-                const usersRef = collection(db, "users");
-                const snapshot = await getDocs(usersRef);
-
-                const usersList: User[] = snapshot.docs.map((doc: DocumentData) => ({
-                    id: doc.id,
-                    ...doc.data(),
-                }));
-
-                setUsers(usersList);
-            } catch (error) {
-                console.error("Error fetching users:", error);
-            }finally {
-            setLoading(false);
-        }
-        }
-
-        fetchUsers();
+    async function loadUsers() {
+        setLoading(true);
+        const list = await fetchAllUsers();
+        setUsers(list);
+        setLoading(false);
+    }
+    loadUsers();
     }, []);
+
 
     const handleRoleChange = async (userId: string, newRole: UserRole) => {
         try {

@@ -1,13 +1,14 @@
 "use client";
 
-import { useState } from 'react';
+import { useState,useEffect } from 'react';
 import { Button } from './ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Image as ImageIcon, Upload, X, ArrowUpRight, Copy } from 'lucide-react';
 import Image from 'next/image';
-
+import { fetchAllUsers } from '@/utils/firebase/users';
+import { User } from "@/types";
 import { Timestamp } from 'firebase/firestore';
 import { toast } from 'sonner';
 
@@ -54,6 +55,9 @@ export function PaymentDetailsDialog({
   const [isOpen, setIsOpen] = useState(false);
   const [screenshot, setScreenshot] = useState<string | null>(initialData?.screenshot || null);
   const [amount, setAmount] = useState(initialData?.amount?.toString() || '');
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [selectedDevId, setSelectedDevId] = useState("");
   const [transactionId, setTransactionId] = useState(initialData?.transactionId || '');
   const [notes, setNotes] = useState(initialData?.notes || '');
   const [isUploading, setIsUploading] = useState(false);
@@ -132,6 +136,16 @@ export function PaymentDetailsDialog({
     }
   };
 
+  useEffect(() => {
+      async function loadUsers() {
+          setLoading(true);
+          const list = await fetchAllUsers();
+          setUsers(list);
+          setLoading(false);
+      }
+      loadUsers();
+      }, []);
+      const devUsers = users.filter(u => u.role === "ADMIN");
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -139,6 +153,22 @@ export function PaymentDetailsDialog({
           {isAdmin ? 'View Payment Details' : 'Add Payment Details'}
         </Button>
       </DialogTrigger>
+      {/* DEV User Dropdown - visible only for Admin */}
+      {isAdmin && (
+        <select
+          className="border rounded-md px-3 py-2 text-sm bg-white"
+          value={selectedDevId}
+          onChange={(e) => setSelectedDevId(e.target.value)}
+        >
+          <option value="">Select Developer</option>
+
+          {devUsers.map((dev) => (
+            <option key={dev.id} value={dev.id}>
+              {dev.name}
+            </option>
+          ))}
+        </select>
+      )}
       <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
