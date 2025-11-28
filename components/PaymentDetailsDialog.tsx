@@ -145,7 +145,7 @@ export function PaymentDetailsDialog({
       }
       loadUsers();
       }, []);
-      const devUsers = users.filter(u => u.role === "ADMIN");
+      const devUsers = users.filter(u => u.role === "DEV");
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
