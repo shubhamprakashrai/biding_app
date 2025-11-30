@@ -164,6 +164,7 @@ export function PaymentDetailsDialog({
       const devUsers = users.filter(u => u.role === "DEV");
   return (
     <Dialog open={open} onOpenChange={setOpen}>
+      <div className='flex justify-between'>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" className="ml-2">
           {isAdmin ? 'View Payment Details' : 'Add Payment Details'}
@@ -171,6 +172,9 @@ export function PaymentDetailsDialog({
       </DialogTrigger>
       {/* DEV User Dropdown - visible only for Admin */}
       {isAdmin && (
+        <>
+        <div className='flex-col pb-2'>
+        <p> Select Developer</p>
         <select
           className="border rounded-md px-3 py-2 text-sm bg-white"
           value={selectedDevId|| assignedTo?.uid || ""}
@@ -196,7 +200,10 @@ export function PaymentDetailsDialog({
             </option>
           ))}
         </select>
+        </div>
+        </>
       )}
+      </div>
       <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
