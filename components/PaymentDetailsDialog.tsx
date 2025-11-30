@@ -9,9 +9,23 @@ import { Image as ImageIcon, Upload, X, ArrowUpRight, Copy } from 'lucide-react'
 import Image from 'next/image';
 import { fetchAllUsers } from '@/utils/firebase/users';
 import { User } from "@/types";
-import { Timestamp } from 'firebase/firestore';
+import { Timestamp,doc, updateDoc } from 'firebase/firestore';
+import { db } from "@/app/firebase/firebase";
 import { toast } from 'sonner';
+import { showSuccessToast, showErrorToast } from "@/utils/auth/authToast";
 
+
+
+async function assignDeveloper(projectId: string, devId: string, devName: string) {
+  const ref = doc(db, "projects", projectId);
+  console.log("Assigning developer:", devId, devName);
+  await updateDoc(ref, {
+    assignedTo: {
+      uid: devId,
+      name: devName,
+    },
+  });
+}
 export interface PaymentStatusHistory {
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
   timestamp: Timestamp | Date;
@@ -35,6 +49,7 @@ export interface PaymentDetails {
 interface PaymentDetailsDialogProps {
   projectId: string;
   isAdmin?: boolean;
+  assignedTo?: { uid: string; name: string } | null;
   onSave: (details: Omit<PaymentDetails, 'timestamp' | 'status'>) => void;
   onStatusChange?: (status: 'APPROVED' | 'REJECTED', notes?: string) => void;
   initialData?: Partial<PaymentDetails>;
@@ -45,6 +60,7 @@ interface PaymentDetailsDialogProps {
 export function PaymentDetailsDialog({
   projectId,
   isAdmin = false,
+  assignedTo,        // ← ADD THIS
   onSave,
   onStatusChange,
   initialData,
@@ -157,8 +173,20 @@ export function PaymentDetailsDialog({
       {isAdmin && (
         <select
           className="border rounded-md px-3 py-2 text-sm bg-white"
-          value={selectedDevId}
-          onChange={(e) => setSelectedDevId(e.target.value)}
+          value={selectedDevId|| assignedTo?.uid || ""}
+          onChange={async (e) => {
+          const devId = e.target.value;
+          setSelectedDevId(devId);
+
+          const dev = devUsers.find((d) => d.id === devId);
+          if (!dev) return;
+
+          // 🔥 Call the project assignment function
+          console.log("Assigning developer from dialog:", devId, dev.name);
+          await assignDeveloper(projectId, dev.id, dev.name);
+
+          showSuccessToast(`Assigned to ${dev.name}`);
+        }}
         >
           <option value="">Select Developer</option>
 
