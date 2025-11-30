@@ -47,10 +47,6 @@ export default function DevDashboard() {
   return (
     <div className="min-h-screen bg-gray-50 p-10">
       <h1 className="text-3xl font-bold text-gray-900">Developer Dashboard</h1>
-      <p className="text-gray-700 mt-2">
-        Welcome, <span className="font-semibold">{currentUser.name}</span>
-      </p>
-
       <div className="mt-10">
         <h2 className="text-xl font-semibold text-gray-900 mb-4">
           Assigned Projects
@@ -67,7 +63,6 @@ export default function DevDashboard() {
                 key={p.id}
                 project={p}
                 isAdmin={false} // Dev cannot assign
-                // onAssignDeveloper={() => {}} // ignored
               />
             ))}
           </div>
