@@ -881,6 +881,7 @@ export default function ProjectCard({
       <PaymentDetailsDialog
       isOpen={showPaymentDetails}
       onOpenChange={setShowPaymentDetails}
+      assignedTo={project.assignedTo || null}
       projectId={project.id}
       isAdmin={isAdmin}
       initialData={{
