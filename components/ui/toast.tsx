@@ -4,6 +4,14 @@ import * as React from "react";
 import * as ToastPrimitives from "@radix-ui/react-toast";
 import { cn } from "@/lib/utils";
 
+export type ToastActionElement = React.ReactElement<typeof ToastPrimitives.Action>;
+
+export type ToastProps = React.ComponentPropsWithoutRef<typeof ToastPrimitives.Root> & {
+  variant?: "default" | "destructive" | "warning";
+  // Custom class name for additional styling
+  className?: string;
+};
+
 const ToastProvider = ToastPrimitives.Provider;
 
 const ToastViewport = React.forwardRef<
@@ -26,18 +34,18 @@ ToastViewport.displayName = ToastPrimitives.Viewport.displayName;
 const Toast = React.forwardRef<
   React.ElementRef<typeof ToastPrimitives.Root>,
   React.ComponentPropsWithoutRef<typeof ToastPrimitives.Root> & {
-    variant?: "default" | "destructive";
+    variant?: "default" | "destructive" | "warning";
   }
 >(({ className, variant = "default", ...props }, ref) => {
-  const isError = variant === "destructive";
-
   return (
     <ToastPrimitives.Root
       ref={ref}
       className={cn(
         "rounded-lg p-4 shadow-lg border transition-all",
-        isError
+        variant === "destructive"
           ? "bg-red-500 text-white border-red-600"
+          : variant === "warning"
+          ? "bg-yellow-500 text-white border-yellow-600"
           : "bg-green-500 text-white border-green-600",
         className
       )}

@@ -58,6 +58,7 @@ export interface Project {
     updatedBy: string; // 'admin' | 'user'
     notes?: string;
   }>;
+  assignedTo?: { uid: string; name: string } | null; // Admin/developer assigned to the project
   paymentNotes?: string;
   payment?: PaymentInfo;
   paymentProof?: string;

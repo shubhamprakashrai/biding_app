@@ -88,9 +88,9 @@ export default function LoginPage() {
       const userData = userDocSnap.data();
       const role = userData.role || "USER";
 
-      // Firebase tokens
-      const accessToken = user.stsTokenManager.accessToken;
-      const refreshToken = user.stsTokenManager.refreshToken;
+      // Get Firebase tokens
+      const idToken = await user.getIdToken();
+      const refreshToken = user.refreshToken;
 
       // Create user object
       const userInfo = {
@@ -98,13 +98,13 @@ export default function LoginPage() {
         email: user.email || "",
         name: userData.name || user.email?.split("@")[0] || "User",
         role,
-        accessToken,
+        accessToken: idToken,
         refreshToken,
       };
 
       // Save locally
       localStorage.setItem("user", JSON.stringify(userInfo));
-      localStorage.setItem("accessToken", accessToken);
+      localStorage.setItem("accessToken", idToken);
       localStorage.setItem("refreshToken", refreshToken);
 
       // Save cookie for middleware

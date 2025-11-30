@@ -58,7 +58,7 @@ export default function RegisterForm() {
     setLoading(true);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
-      console.log('User registered with UID:', userCredential.user, userCredential.user.stsTokenManager);
+      console.log('User registered with UID:', userCredential.user.uid);
       await updateProfile(userCredential.user, { displayName: formData.name });
 
       await setDoc(doc(db, 'users', userCredential.user.uid), {
@@ -66,39 +66,33 @@ export default function RegisterForm() {
         ...formData,
         createdAt: new Date(),
       });
-      // Extract tokens
+      // Get user and ID token
       const user = userCredential.user;
-      const accessToken = user.stsTokenManager.accessToken;
-      const refreshToken = user.stsTokenManager.refreshToken;
+      const idToken = await user.getIdToken();
+      const refreshToken = user.refreshToken;
 
       // ⬇️ Save tokens to localStorage
-      localStorage.setItem("accessToken", accessToken);
+      localStorage.setItem("accessToken", idToken);
       localStorage.setItem("refreshToken", refreshToken);
 
-      // Optional: Save entire user object
-      localStorage.setItem(
-        "user",
-        JSON.stringify({
-          uid: user.uid,
-          name: formData.name,
-          email: formData.email,
-          role: formData.role,
-        })
-      );
-      setUser({
-        uid: userCredential.user.uid,
-        name: formData.name,
-        email: formData.email,
-        role: formData.role
-      });
-      Cookies.set("user", JSON.stringify({
-        uid: userCredential.user.uid,
+      // Create user info object
+      const userInfo = {
+        uid: user.uid,
         name: formData.name,
         email: formData.email,
         role: formData.role,
-        accessToken: userCredential.user.stsTokenManager.accessToken,
-        refreshToken: userCredential.user.stsTokenManager.refreshToken,
-      }), { expires: 7 });
+        accessToken: idToken,
+        refreshToken: refreshToken
+      };
+
+      // Save user info to localStorage
+      localStorage.setItem("user", JSON.stringify(userInfo));
+      
+      // Update user state
+      setUser(userInfo);
+      
+      // Set cookie for middleware
+      Cookies.set("user", JSON.stringify(userInfo), { expires: 7 });
 
       setSuccess("Account created successfully!");
       showSuccessToast("Account created successfully!");
